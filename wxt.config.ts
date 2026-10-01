@@ -20,6 +20,7 @@ export default defineConfig({
       'storage',
       'tabs',
       'unlimitedStorage',
+      ...(browser === 'firefox' ? [] : ['downloads.ui', 'offscreen']),
     ],
     action: {
       default_title: 'Tab Tracker',

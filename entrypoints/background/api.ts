@@ -1,4 +1,5 @@
 import { onMessage } from '@/lib/messages';
+import { exportBackup, importBackup } from './backup';
 import {
   getClosedTabs,
   getClosedWindows,
@@ -19,4 +20,6 @@ export function registerMessageHandlers() {
   onMessage('searchSnapshots', ({ data }) => searchSnapshots(data));
   onMessage('restoreTabs', ({ data }) => restoreTabs(data));
   onMessage('searchForTab', ({ data }) => searchForTab(data));
+  onMessage('exportBackup', () => exportBackup());
+  onMessage('importBackup', ({ data }) => importBackup(data));
 }

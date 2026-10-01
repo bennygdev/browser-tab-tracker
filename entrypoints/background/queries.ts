@@ -19,7 +19,7 @@ export async function getSnapshotSummaries({
   limit,
   recoveryOnly,
 }: SnapshotsRequest): Promise<SnapshotSummary[]> {
-  const page = before === undefined ? db.snapshots.toCollection() : db.snapshots.where('id').below(before);
+  const page = before ? db.snapshots.where('[createdAt+id]').below(before) : db.snapshots.orderBy('[createdAt+id]');
   const snapshots = await page
     .reverse()
     .filter((snapshot) => !recoveryOnly || snapshot.recovery !== undefined)
@@ -42,13 +42,13 @@ export async function getSnapshot(id: number): Promise<Snapshot | null> {
 }
 
 export async function getClosedTabs({ before, limit, query }: ClosedTabsRequest): Promise<ClosedTab[]> {
-  const page = before === undefined ? db.closedTabs.toCollection() : db.closedTabs.where('id').below(before);
+  const page = before ? db.closedTabs.where('[closedAt+id]').below(before) : db.closedTabs.orderBy('[closedAt+id]');
   return page.reverse().filter(tabMatcher(query)).limit(limit).toArray();
 }
 
 export async function getClosedWindows(limit: number): Promise<ClosedWindow[]> {
   const [recent, open] = await Promise.all([
-    db.closedWindows.reverse().limit(CLOSED_WINDOW_SCAN).toArray(),
+    db.closedWindows.orderBy('closedAt').reverse().limit(CLOSED_WINDOW_SCAN).toArray(),
     openTabKeys(),
   ]);
   return recent
@@ -64,6 +64,7 @@ export async function searchSnapshots(query: string): Promise<SearchResult[]> {
   const isFull = () => results.size >= SEARCH_LIMIT;
 
   await db.snapshots
+    .orderBy('createdAt')
     .reverse()
     .until(isFull)
     .each((snapshot) => {

@@ -16,7 +16,9 @@ export interface WindowRecord {
 
 export type WindowPlan = Pick<WindowRecord, 'incognito' | 'tabs'>;
 
-export type RecoveryReason = 'window-closed' | 'tab-drop' | 'session-end';
+export const RECOVERY_REASONS = ['window-closed', 'tab-drop', 'session-end'] as const;
+
+export type RecoveryReason = (typeof RECOVERY_REASONS)[number];
 
 export interface Session {
   id: number;
@@ -66,8 +68,10 @@ export interface LostSession {
   windows: WindowPlan[];
 }
 
+export type PageCursor = [time: number, id: number];
+
 export interface PageRequest {
-  before?: number;
+  before?: PageCursor;
   limit: number;
 }
 
@@ -89,4 +93,20 @@ export interface RestoreResult {
   opened: number;
   skipped: number;
   failed: TabEntry[];
+}
+
+export interface Backup {
+  format: 'tab-tracker-backup';
+  version: 1;
+  exportedAt: number;
+  sessions: Session[];
+  snapshots: Snapshot[];
+  closedTabs: ClosedTab[];
+  closedWindows: ClosedWindow[];
+}
+
+export interface ImportResult {
+  snapshots: number;
+  closedTabs: number;
+  closedWindows: number;
 }

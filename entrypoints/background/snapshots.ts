@@ -1,6 +1,6 @@
 import { countTabs, tabKey } from '@/lib/tabs';
 import type { RecoveryReason, Snapshot, WindowRecord } from '@/lib/types';
-import { db } from './db';
+import { db, snapshotsOf } from './db';
 import { toWindowRecord } from './records';
 import { currentSessionId } from './session';
 import { resetTabCache } from './tab-cache';
@@ -19,7 +19,7 @@ export async function takeSnapshot() {
 
   const sessionId = await currentSessionId();
   await db.transaction('rw', db.snapshots, db.closedWindows, async () => {
-    const previous = await db.snapshots.where('sessionId').equals(sessionId).last();
+    const previous = await snapshotsOf(sessionId).last();
 
     if (previous && layoutOf(previous.windows) === layoutOf(windows)) {
       await refreshTitles(previous, windows);

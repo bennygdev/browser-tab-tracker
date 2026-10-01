@@ -1,15 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { sendMessage } from '@/lib/messages';
 import { OVERLAY_CLOSE_MESSAGE } from '@/lib/overlay';
 import type { RestoreRequest } from '@/lib/types';
+import { BackupActions } from './components/BackupActions';
 import { ClosedTabs } from './components/ClosedTabs';
 import { RecentlyClosed } from './components/RecentlyClosed';
 import { RestoreFeedback } from './components/RestoreFeedback';
 import { SearchResults } from './components/SearchResults';
 import { SnapshotDetail } from './components/SnapshotDetail';
 import { Timeline } from './components/Timeline';
+import { Toast } from './components/ui';
 import { useDebouncedValue } from './hooks';
 import { cn } from './utils';
 
@@ -32,6 +34,7 @@ export default function App() {
   const [view, setView] = useState<View>('timeline');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(initialSnapshotId);
+  const [notice, setNotice] = useState<{ id: number; message: string }>();
   const search = useDebouncedValue(query.trim(), 200);
   const queryClient = useQueryClient();
   const restore = useMutation({
@@ -41,6 +44,9 @@ export default function App() {
       void queryClient.invalidateQueries({ queryKey: ['closed-windows'] });
     },
   });
+
+  const showNotice = useCallback((message: string) => setNotice({ id: Date.now(), message }), []);
+  const dismissNotice = useCallback(() => setNotice(undefined), []);
 
   const showSnapshot = (snapshotId: number) => {
     setView('timeline');
@@ -80,14 +86,17 @@ export default function App() {
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">Your tab history, day by day</p>
           </div>
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Close"
-            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          >
-            <X className="size-5" aria-hidden />
-          </button>
+          <div className="flex items-center gap-1">
+            <BackupActions onNotice={showNotice} />
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Close"
+              className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            >
+              <X className="size-5" aria-hidden />
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <nav className="flex shrink-0 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
@@ -158,7 +167,15 @@ export default function App() {
           </main>
         </div>
       )}
-      <RestoreFeedback result={restore.data} error={restore.error} onDismiss={restore.reset} />
+      <div className="absolute right-4 bottom-4 z-20 flex w-96 flex-col gap-2">
+        <RestoreFeedback
+          key={restore.submittedAt}
+          result={restore.data}
+          error={restore.error}
+          onDismiss={restore.reset}
+        />
+        {notice && <Toast key={notice.id} message={notice.message} onDismiss={dismissNotice} />}
+      </div>
     </div>
   );
 

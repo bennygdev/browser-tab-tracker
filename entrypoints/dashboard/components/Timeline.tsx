@@ -32,6 +32,7 @@ function TimelineList({ recoveryOnly, selectedId, onSelect }: TimelineProps & { 
   const { items, isPending, error, hasNextPage, fetchNextPage, isFetchingNextPage } = usePagedQuery(
     ['snapshots', recoveryOnly],
     (page) => sendMessage('getSnapshotSummaries', { ...page, recoveryOnly }),
+    (snapshot) => [snapshot.createdAt, snapshot.id],
   );
   const latestId = items[0]?.id;
 

@@ -1,4 +1,5 @@
 import { debounce } from '@/lib/debounce';
+import { ensureAlarm } from './alarms';
 import { logClosedTab } from './closed-tabs';
 import { report } from './report';
 import { takeSnapshot } from './snapshots';
@@ -51,7 +52,7 @@ export function startTracking() {
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === CHECK_ALARM) scheduleSnapshot();
   });
-  ensureCheckAlarm().catch(report);
+  ensureAlarm(CHECK_ALARM, { periodInMinutes: CHECK_INTERVAL_MINUTES }).catch(report);
 
   scheduleSnapshot();
 }
@@ -59,9 +60,4 @@ export function startTracking() {
 async function recordRemoval(tabId: number, isWindowClosing: boolean) {
   const tab = await forgetTab(tabId);
   if (tab && !isWindowClosing) await logClosedTab(tab);
-}
-
-async function ensureCheckAlarm() {
-  if (await browser.alarms.get(CHECK_ALARM)) return;
-  await browser.alarms.create(CHECK_ALARM, { periodInMinutes: CHECK_INTERVAL_MINUTES });
 }

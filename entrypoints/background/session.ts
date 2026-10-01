@@ -1,5 +1,5 @@
 import type { Session, Snapshot } from '@/lib/types';
-import { db } from './db';
+import { db, snapshotsOf } from './db';
 
 const SESSION_KEY = 'sessionId';
 const SHUTDOWN_WINDOW_MS = 30_000;
@@ -23,9 +23,15 @@ async function resolveSessionId(): Promise<number> {
   return id;
 }
 
+export async function previousSession() {
+  const current = await db.sessions.get(await currentSessionId());
+  if (!current) return undefined;
+  return db.sessions.where('[startedAt+id]').below([current.startedAt, current.id]).last();
+}
+
 function startSession(): Promise<number> {
   return db.transaction('rw', db.sessions, db.snapshots, db.closedWindows, async () => {
-    const previous = await db.sessions.toCollection().last();
+    const previous = await db.sessions.orderBy('[startedAt+id]').last();
     if (previous) await markSessionEnd(previous);
     return db.sessions.add({ startedAt: Date.now() });
   });
@@ -39,12 +45,7 @@ async function markSessionEnd(session: Session) {
 }
 
 async function findEndSnapshotId(sessionId: number) {
-  const recent = await db.snapshots
-    .where('sessionId')
-    .equals(sessionId)
-    .reverse()
-    .limit(MAX_SHUTDOWN_STEPS)
-    .toArray();
+  const recent = await snapshotsOf(sessionId).reverse().limit(MAX_SHUTDOWN_STEPS).toArray();
   const [last] = recent;
   if (!last) return undefined;
 

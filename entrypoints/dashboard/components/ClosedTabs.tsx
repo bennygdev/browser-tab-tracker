@@ -8,6 +8,7 @@ export function ClosedTabs({ query }: { query: string }) {
   const { items, isPending, error, hasNextPage, fetchNextPage, isFetchingNextPage } = usePagedQuery(
     ['closed-tabs', query],
     (page) => sendMessage('getClosedTabs', { ...page, query }),
+    (tab) => [tab.closedAt, tab.id],
   );
 
   if (isPending) return <Notice>Loading…</Notice>;

@@ -3,6 +3,7 @@ import type {
   ClosedTab,
   ClosedTabsRequest,
   ClosedWindow,
+  ImportResult,
   LostSession,
   RestoreRequest,
   RestoreResult,
@@ -23,6 +24,9 @@ interface ProtocolMap {
   searchSnapshots(query: string): SearchResult[];
   restoreTabs(request: RestoreRequest): RestoreResult;
   searchForTab(tab: TabEntry): void;
+  exportBackup(): boolean;
+  importBackup(text: string): ImportResult;
+  createObjectUrl(file: { text: string; type: string }): string;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();

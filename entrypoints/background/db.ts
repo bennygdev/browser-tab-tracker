@@ -8,12 +8,13 @@ export const db = new Dexie('tab-tracker') as Dexie & {
   closedWindows: EntityTable<ClosedWindow, 'id'>;
 };
 
-db.version(1).stores({
-  sessions: '++id',
-  snapshots: '++id, sessionId, createdAt',
-  closedTabs: '++id, sessionId, closedAt',
-});
-
-db.version(2).stores({
+db.version(3).stores({
+  sessions: '++id, [startedAt+id]',
+  snapshots: '++id, createdAt, [createdAt+id], [sessionId+createdAt]',
+  closedTabs: '++id, closedAt, [closedAt+id]',
   closedWindows: '++id, sessionId, closedAt',
 });
+
+export function snapshotsOf(sessionId: number) {
+  return db.snapshots.where('[sessionId+createdAt]').between([sessionId, Dexie.minKey], [sessionId, Dexie.maxKey]);
+}

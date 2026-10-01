@@ -6,7 +6,7 @@ import { openStandaloneDashboard } from './open-dashboard';
 import { missingTabs } from './open-tabs';
 import { report } from './report';
 import { restoreTabs } from './restore';
-import { currentSessionId } from './session';
+import { previousSession } from './session';
 
 const CHECK_ALARM = 'lost-session-check';
 const CHECK_DELAY_MS = 15_000;
@@ -35,8 +35,7 @@ export function startRecoveryChecks() {
 }
 
 export async function findLostSession(): Promise<LostSession | null> {
-  const sessionId = await currentSessionId();
-  const previous = await db.sessions.where('id').below(sessionId).last();
+  const previous = await previousSession();
   if (previous?.endSnapshotId === undefined) return null;
 
   const { [DISMISSED_KEY]: dismissed } = await browser.storage.local.get(DISMISSED_KEY);

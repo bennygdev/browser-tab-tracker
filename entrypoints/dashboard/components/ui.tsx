@@ -1,8 +1,10 @@
-import { EyeOff, Pin } from 'lucide-react';
-import type { ComponentProps, ReactNode } from 'react';
+import { EyeOff, Pin, X } from 'lucide-react';
+import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import { formatDay } from '@/lib/format';
 import type { RecoveryReason, TabRecord } from '@/lib/types';
 import { cn } from '../utils';
+
+const TOAST_DISMISS_MS = 6000;
 
 export const RECOVERY_LABELS: Record<RecoveryReason, { label: string; description: string }> = {
   'window-closed': {
@@ -118,6 +120,36 @@ export function LoadMoreButton({ onClick, loading }: { onClick: () => void; load
       <Button variant="ghost" onClick={onClick} disabled={loading}>
         {loading ? 'Loading…' : 'Load older'}
       </Button>
+    </div>
+  );
+}
+
+interface ToastProps {
+  message: string;
+  autoDismiss?: boolean;
+  onDismiss: () => void;
+  children?: ReactNode;
+}
+
+export function Toast({ message, autoDismiss = true, onDismiss, children }: ToastProps) {
+  useEffect(() => {
+    if (!autoDismiss) return;
+    const timer = setTimeout(onDismiss, TOAST_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [autoDismiss, onDismiss]);
+
+  return (
+    <div
+      role="status"
+      className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium">{message}</p>
+        <Button variant="ghost" onClick={onDismiss} aria-label="Dismiss" className="-m-1 px-1.5">
+          <X className="size-4" aria-hidden />
+        </Button>
+      </div>
+      {children}
     </div>
   );
 }

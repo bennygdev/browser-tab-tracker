@@ -48,10 +48,25 @@ describe('getSnapshotSummaries', () => {
     for (let i = 1; i <= 5; i++) await addSnapshot(i * 100, [windowOf(1, ['https://a.example'])]);
 
     const first = await getSnapshotSummaries({ limit: 2, recoveryOnly: false });
-    const second = await getSnapshotSummaries({ before: first.at(-1)?.id, limit: 2, recoveryOnly: false });
+    const last = first.at(-1);
+    const second = await getSnapshotSummaries({
+      before: last && [last.createdAt, last.id],
+      limit: 2,
+      recoveryOnly: false,
+    });
 
     expect(first.map((s) => s.createdAt)).toEqual([500, 400]);
     expect(second.map((s) => s.createdAt)).toEqual([300, 200]);
+  });
+
+  it('orders by time even when ids are not in time order', async () => {
+    await addSnapshot(300, [windowOf(1, ['https://a.example'])]);
+    await addSnapshot(100, [windowOf(1, ['https://b.example'])]);
+    await addSnapshot(200, [windowOf(1, ['https://c.example'])]);
+
+    const summaries = await getSnapshotSummaries({ limit: 10, recoveryOnly: false });
+
+    expect(summaries.map((s) => s.createdAt)).toEqual([300, 200, 100]);
   });
 
   it('can return recovery points only', async () => {
@@ -91,10 +106,25 @@ describe('getClosedTabs', () => {
     for (let i = 1; i <= 3; i++) await addClosedTab(i * 100, `https://site${i}.example`);
 
     const first = await getClosedTabs({ limit: 2, query: '' });
-    const second = await getClosedTabs({ before: first.at(-1)?.id, limit: 2, query: '' });
+    const last = first.at(-1);
+    const second = await getClosedTabs({ before: last && [last.closedAt, last.id], limit: 2, query: '' });
 
     expect(first.map((tab) => tab.closedAt)).toEqual([300, 200]);
     expect(second.map((tab) => tab.closedAt)).toEqual([100]);
+  });
+
+  it('does not skip tabs closed in the same millisecond across pages', async () => {
+    for (let i = 1; i <= 3; i++) await addClosedTab(100, `https://site${i}.example`);
+
+    const first = await getClosedTabs({ limit: 2, query: '' });
+    const last = first.at(-1);
+    const second = await getClosedTabs({ before: last && [last.closedAt, last.id], limit: 2, query: '' });
+
+    expect([...first, ...second].map((tab) => tab.url).sort()).toEqual([
+      'https://site1.example',
+      'https://site2.example',
+      'https://site3.example',
+    ]);
   });
 
   it('filters by title or URL before applying the page size', async () => {

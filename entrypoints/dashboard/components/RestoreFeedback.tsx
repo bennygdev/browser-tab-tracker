@@ -1,12 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
-import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { plural } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
 import type { RestoreResult, TabEntry } from '@/lib/types';
-import { Button, TabLabel } from './ui';
+import { Button, TabLabel, Toast } from './ui';
 
-const AUTO_DISMISS_MS = 6000;
 const COPY_LABELS = { idle: 'Copy', copied: 'Copied', failed: 'Copy failed' };
 
 interface RestoreFeedbackProps {
@@ -16,29 +14,13 @@ interface RestoreFeedbackProps {
 }
 
 export function RestoreFeedback({ result, error, onDismiss }: RestoreFeedbackProps) {
-  const failed = result?.failed ?? [];
-  const autoDismiss = result !== undefined && failed.length === 0;
-
-  useEffect(() => {
-    if (!autoDismiss) return;
-    const timer = setTimeout(onDismiss, AUTO_DISMISS_MS);
-    return () => clearTimeout(timer);
-  }, [autoDismiss, result, onDismiss]);
-
   const message = error ? `Restore failed: ${error.message}` : result && summarize(result);
   if (!message) return null;
 
+  const failed = result?.failed ?? [];
+
   return (
-    <div
-      role="status"
-      className="absolute right-4 bottom-4 z-20 w-96 space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium">{message}</p>
-        <Button variant="ghost" onClick={onDismiss} aria-label="Dismiss" className="-m-1 px-1.5">
-          <X className="size-4" aria-hidden />
-        </Button>
-      </div>
+    <Toast message={message} autoDismiss={!error && failed.length === 0} onDismiss={onDismiss}>
       {failed.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -51,7 +33,7 @@ export function RestoreFeedback({ result, error, onDismiss }: RestoreFeedbackPro
           </ul>
         </div>
       )}
-    </div>
+    </Toast>
   );
 }
 
