@@ -1,4 +1,4 @@
-import { OVERLAY_CLOSE_MESSAGE } from '@/lib/messages';
+import { OVERLAY_CLOSE_MESSAGE } from '@/lib/overlay';
 
 const HOST_TAG = 'tab-tracker-overlay';
 const TOGGLE_EVENT = 'tab-tracker:toggle';

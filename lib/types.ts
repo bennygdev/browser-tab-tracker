@@ -31,3 +31,28 @@ export interface ClosedTab extends TabRecord {
   closedAt: number;
   incognito: boolean;
 }
+
+export interface SnapshotSummary {
+  id: number;
+  sessionId: number;
+  sessionStartedAt: number;
+  createdAt: number;
+  tabCount: number;
+  privateTabCount: number;
+  recovery?: RecoveryReason;
+}
+
+export interface SearchResult extends TabRecord {
+  incognito: boolean;
+  seenAt: number;
+  snapshotId: number;
+}
+
+export interface PageRequest {
+  before?: number;
+  limit: number;
+}
+
+export interface ClosedTabsRequest extends PageRequest {
+  query: string;
+}

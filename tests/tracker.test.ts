@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { db } from '@/entrypoints/background/db';
 import { startTracking } from '@/entrypoints/background/tracker';
-import { fakeTab } from './helpers';
+import { fakeTab, setOpenWindows } from './helpers';
 
 describe('tracker', () => {
   beforeEach(() => {
@@ -16,6 +16,14 @@ describe('tracker', () => {
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+
+  it('records the open tabs as soon as tracking starts', async () => {
+    setOpenWindows([{ id: 1, tabs: ['https://a.example', 'https://b.example'] }]);
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await vi.waitFor(async () => expect(await db.snapshots.count()).toBe(1));
   });
 
   it('logs a tab that was closed on its own', async () => {

@@ -23,6 +23,11 @@ export default defineConfig({
     action: {
       default_title: 'Tab Tracker',
     },
+    commands: {
+      _execute_action: {
+        suggested_key: { default: 'Alt+Shift+H' },
+      },
+    },
     web_accessible_resources: [
       {
         resources: ['dashboard.html'],

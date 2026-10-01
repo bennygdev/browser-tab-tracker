@@ -51,6 +51,8 @@ export function startTracking() {
     if (alarm.name === CHECK_ALARM) scheduleSnapshot();
   });
   ensureCheckAlarm().catch(report);
+
+  scheduleSnapshot();
 }
 
 async function recordRemoval(tabId: number, isWindowClosing: boolean) {

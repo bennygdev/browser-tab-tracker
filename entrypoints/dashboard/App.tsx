@@ -1,5 +1,19 @@
-import { useEffect } from 'react';
-import { OVERLAY_CLOSE_MESSAGE } from '@/lib/messages';
+import { Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { OVERLAY_CLOSE_MESSAGE } from '@/lib/overlay';
+import { ClosedTabs } from './components/ClosedTabs';
+import { SearchResults } from './components/SearchResults';
+import { SnapshotDetail } from './components/SnapshotDetail';
+import { Timeline } from './components/Timeline';
+import { useDebouncedValue } from './hooks';
+import { cn } from './utils';
+
+type View = 'timeline' | 'closed';
+
+const VIEWS: { id: View; label: string; placeholder: string }[] = [
+  { id: 'timeline', label: 'Timeline', placeholder: 'Search every tab by title or URL' },
+  { id: 'closed', label: 'Closed tabs', placeholder: 'Search closed tabs' },
+];
 
 const embedded = window.top !== window;
 
@@ -9,12 +23,21 @@ function close() {
 }
 
 export default function App() {
+  const [view, setView] = useState<View>('timeline');
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState<number>();
+  const search = useDebouncedValue(query.trim(), 200);
+
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    const controller = new AbortController();
+    window.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key === 'Escape') close();
+      },
+      { signal: controller.signal },
+    );
+    return () => controller.abort();
   }, []);
 
   const panel = (
@@ -22,36 +45,89 @@ export default function App() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="dashboard-title"
-      className={`flex flex-col bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 ${
+      className={cn(
+        'flex flex-col bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100',
         embedded
-          ? 'h-[min(80vh,720px)] w-full max-w-4xl rounded-2xl shadow-2xl ring-1 ring-black/10 dark:ring-white/10'
-          : 'h-screen w-screen'
-      }`}
+          ? 'h-[min(85vh,800px)] w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 dark:ring-white/10'
+          : 'h-screen w-screen',
+      )}
     >
-      <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-        <div>
-          <h1 id="dashboard-title" className="text-lg font-semibold">
-            Tab Tracker
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Your tab history, day by day</p>
+      <header className="space-y-4 border-b border-zinc-200 px-6 pt-4 pb-3 dark:border-zinc-800">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 id="dashboard-title" className="text-lg font-semibold">
+              Tab Tracker
+            </h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Your tab history, day by day</p>
+          </div>
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close"
+            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          >
+            <X className="size-5" aria-hidden />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={close}
-          aria-label="Close"
-          className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="size-5" aria-hidden="true">
-            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-3">
+          <nav className="flex shrink-0 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+            {VIEWS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={view === id}
+                onClick={() => setView(id)}
+                className={cn(
+                  'rounded-md px-3 py-1 text-sm font-medium',
+                  view === id
+                    ? 'bg-white shadow-sm dark:bg-zinc-700'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <label className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden
+            />
+            <input
+              type="search"
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape' || !query) return;
+                event.stopPropagation();
+                setQuery('');
+              }}
+              placeholder={VIEWS.find(({ id }) => id === view)?.placeholder}
+              aria-label="Search"
+              className="w-full rounded-lg border border-zinc-200 bg-transparent py-1.5 pr-3 pl-9 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:focus:border-zinc-500"
+            />
+          </label>
+        </div>
       </header>
-      <main className="flex flex-1 flex-col items-center justify-center gap-1 p-6 text-center">
-        <p className="font-medium">No snapshots yet</p>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Your tabs will show up here once tracking is running.
-        </p>
-      </main>
+      {view === 'closed' ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <ClosedTabs query={search} />
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1">
+          <aside className="w-80 shrink-0 overflow-y-auto border-r border-zinc-200 dark:border-zinc-800">
+            {search ? (
+              <SearchResults query={search} onSelect={setSelectedId} />
+            ) : (
+              <Timeline selectedId={selectedId} onSelect={setSelectedId} />
+            )}
+          </aside>
+          <main key={selectedId} className="min-w-0 flex-1 overflow-y-auto">
+            {selectedId !== undefined && <SnapshotDetail id={selectedId} highlight={search} />}
+          </main>
+        </div>
+      )}
     </div>
   );
 

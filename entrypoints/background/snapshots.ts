@@ -1,4 +1,5 @@
 import type { RecoveryReason, Snapshot, WindowRecord } from '@/lib/types';
+import { countTabs } from '@/lib/windows';
 import { db } from './db';
 import { toWindowRecord } from './records';
 import { currentSessionId } from './session';
@@ -51,8 +52,4 @@ function recoveryReason(before: WindowRecord[], after: WindowRecord[]): Recovery
   if (before.some((win) => !remaining.has(win.id))) return 'window-closed';
   if (countTabs(before) - countTabs(after) >= TAB_DROP_THRESHOLD) return 'tab-drop';
   return undefined;
-}
-
-function countTabs(windows: WindowRecord[]) {
-  return windows.reduce((total, win) => total + win.tabs.length, 0);
 }
