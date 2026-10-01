@@ -25,17 +25,28 @@ Everything stays on your machine. The extension makes no network requests.
 | React 19 | Dashboard UI |
 | Tailwind CSS 4 | Styling |
 | IndexedDB via Dexie | Local snapshot database |
+| Vitest | Unit tests |
 
 ## Project structure
 
 ```
 entrypoints/
-  background.ts   Background script: tracks tabs, opens the dashboard
+  background/     Background script: tab tracking, snapshots, opening the dashboard
   overlay.ts      Injected into the current page to show the dashboard as a modal
   dashboard/      Dashboard UI
 lib/              Code shared between entrypoints
+tests/            Unit tests
 assets/icon.svg   Toolbar icon source, PNG sizes are generated at build time
 ```
+
+### How tracking works
+
+- Every tab or window change (open, close, move, navigate, pin) schedules a snapshot. Bursts are grouped, so opening 10 tabs at once saves one snapshot
+- A snapshot is only saved when the set of open tabs actually changed. Title-only changes refresh the latest snapshot instead of adding a new one
+- Snapshots are never deleted or replaced, and an empty state is never saved
+- Each browser launch starts a new session, detected through `storage.session` (which the browser clears on restart). The previous session's last snapshot is kept as is, so tabs lost in a crash are still there
+- The snapshot right before a window closes, 5 or more tabs close at once, or a session ends is marked as a recovery point
+- Tabs you close one at a time go to a closed tabs list. Tabs that close along with their window stay in the recovery point instead
 
 ### How the overlay works
 
@@ -54,6 +65,7 @@ npm run dev:firefox    # Firefox with live reload
 npm run build          # outputs .output/chrome-mv3
 npm run build:firefox  # outputs .output/firefox-mv3
 npm run compile        # type check
+npm test               # unit tests
 ```
 
 ## Loading the extension

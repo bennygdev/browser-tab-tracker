@@ -1,9 +1,7 @@
-export default defineBackground(() => {
-  browser.action.onClicked.addListener(async (tab) => {
-    const opened = tab.id !== undefined && (await injectOverlay(tab.id));
-    if (!opened) await openStandaloneDashboard();
-  });
-});
+export async function openDashboard(tab: Browser.tabs.Tab) {
+  const injected = tab.id !== undefined && (await injectOverlay(tab.id));
+  if (!injected) await openStandaloneDashboard();
+}
 
 async function injectOverlay(tabId: number): Promise<boolean> {
   try {

@@ -1,0 +1,68 @@
+import { debounce } from '@/lib/debounce';
+import { logClosedTab } from './closed-tabs';
+import { takeSnapshot } from './snapshots';
+import { forgetTab, rememberTab } from './tab-cache';
+
+const SNAPSHOT_DELAY_MS = 1000;
+const SNAPSHOT_MAX_DELAY_MS = 5000;
+const CHECK_ALARM = 'snapshot-check';
+const CHECK_INTERVAL_MINUTES = 5;
+
+let snapshotQueue = Promise.resolve();
+
+const scheduleSnapshot = debounce(
+  () => {
+    snapshotQueue = snapshotQueue.then(takeSnapshot).catch(report);
+  },
+  SNAPSHOT_DELAY_MS,
+  SNAPSHOT_MAX_DELAY_MS,
+);
+
+export function startTracking() {
+  browser.tabs.onCreated.addListener(async (tab) => {
+    scheduleSnapshot();
+    await rememberTab(tab).catch(report);
+  });
+
+  browser.tabs.onUpdated.addListener(async (_tabId, change, tab) => {
+    if (change.url !== undefined || change.pinned !== undefined || change.status === 'complete') {
+      scheduleSnapshot();
+    }
+    if (change.url !== undefined || change.title !== undefined || change.pinned !== undefined) {
+      await rememberTab(tab).catch(report);
+    }
+  });
+
+  browser.tabs.onRemoved.addListener(async (tabId, { isWindowClosing }) => {
+    scheduleSnapshot();
+    await recordRemoval(tabId, isWindowClosing).catch(report);
+  });
+
+  browser.tabs.onMoved.addListener(scheduleSnapshot);
+  browser.tabs.onAttached.addListener(scheduleSnapshot);
+  browser.tabs.onDetached.addListener(scheduleSnapshot);
+  browser.tabs.onReplaced.addListener(scheduleSnapshot);
+  browser.windows.onCreated.addListener(scheduleSnapshot);
+  browser.windows.onRemoved.addListener(scheduleSnapshot);
+  browser.runtime.onStartup.addListener(scheduleSnapshot);
+  browser.runtime.onInstalled.addListener(scheduleSnapshot);
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === CHECK_ALARM) scheduleSnapshot();
+  });
+  ensureCheckAlarm().catch(report);
+}
+
+async function recordRemoval(tabId: number, isWindowClosing: boolean) {
+  const tab = await forgetTab(tabId);
+  if (tab && !isWindowClosing) await logClosedTab(tab);
+}
+
+async function ensureCheckAlarm() {
+  if (await browser.alarms.get(CHECK_ALARM)) return;
+  await browser.alarms.create(CHECK_ALARM, { periodInMinutes: CHECK_INTERVAL_MINUTES });
+}
+
+function report(error: unknown) {
+  console.error('[Tab Tracker]', error);
+}
