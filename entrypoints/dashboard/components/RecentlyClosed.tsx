@@ -16,12 +16,13 @@ const TONES = {
 };
 
 interface RecentlyClosedProps {
+  skipAlreadyOpen: boolean;
   restoring: boolean;
   onSelect: (snapshotId: number) => void;
   onRestore: (request: RestoreRequest) => void;
 }
 
-export function RecentlyClosed({ restoring, onSelect, onRestore }: RecentlyClosedProps) {
+export function RecentlyClosed({ skipAlreadyOpen, restoring, onSelect, onRestore }: RecentlyClosedProps) {
   const queryClient = useQueryClient();
   const { data: lost } = useQuery({
     queryKey: ['lost-session'],
@@ -38,7 +39,7 @@ export function RecentlyClosed({ restoring, onSelect, onRestore }: RecentlyClose
 
   if (!lost && windows.length === 0) return null;
 
-  const restore = (plans: WindowPlan[]) => onRestore({ windows: plans, target: 'new-window', skipAlreadyOpen: true });
+  const restore = (plans: WindowPlan[]) => onRestore({ windows: plans, target: 'new-window', skipAlreadyOpen });
 
   return (
     <section

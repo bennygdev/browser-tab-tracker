@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, X } from 'lucide-react';
+import { Search, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { sendMessage } from '@/lib/messages';
 import { OVERLAY_CLOSE_MESSAGE } from '@/lib/overlay';
@@ -9,10 +9,11 @@ import { ClosedTabs } from './components/ClosedTabs';
 import { RecentlyClosed } from './components/RecentlyClosed';
 import { RestoreFeedback } from './components/RestoreFeedback';
 import { SearchResults } from './components/SearchResults';
+import { SettingsView } from './components/SettingsView';
 import { SnapshotDetail } from './components/SnapshotDetail';
 import { Timeline } from './components/Timeline';
-import { Toast } from './components/ui';
-import { useDebouncedValue } from './hooks';
+import { Button, Toast } from './components/ui';
+import { useDebouncedValue, useSettings } from './hooks';
 import { cn } from './utils';
 
 type View = 'timeline' | 'closed';
@@ -32,10 +33,12 @@ function close() {
 
 export default function App() {
   const [view, setView] = useState<View>('timeline');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(initialSnapshotId);
   const [notice, setNotice] = useState<{ id: number; message: string }>();
   const search = useDebouncedValue(query.trim(), 200);
+  const settings = useSettings();
   const queryClient = useQueryClient();
   const restore = useMutation({
     mutationFn: (request: RestoreRequest) => sendMessage('restoreTabs', request),
@@ -59,12 +62,14 @@ export default function App() {
     window.addEventListener(
       'keydown',
       (event) => {
-        if (event.key === 'Escape') close();
+        if (event.key !== 'Escape') return;
+        if (settingsOpen) setSettingsOpen(false);
+        else close();
       },
       { signal: controller.signal },
     );
     return () => controller.abort();
-  }, []);
+  }, [settingsOpen]);
 
   const panel = (
     <div
@@ -88,6 +93,16 @@ export default function App() {
           </div>
           <div className="flex items-center gap-1">
             <BackupActions onNotice={showNotice} />
+            <Button
+              variant="ghost"
+              onClick={() => setSettingsOpen((open) => !open)}
+              aria-label="Settings"
+              aria-pressed={settingsOpen}
+              title="Settings"
+              className="px-1.5 aria-pressed:bg-zinc-900/5 aria-pressed:text-zinc-900 dark:aria-pressed:bg-white/10 dark:aria-pressed:text-zinc-100"
+            >
+              <Settings className="size-4" aria-hidden />
+            </Button>
             <button
               type="button"
               onClick={close}
@@ -98,74 +113,89 @@ export default function App() {
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <nav className="flex shrink-0 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
-            {VIEWS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={view === id}
-                onClick={() => setView(id)}
-                className={cn(
-                  'rounded-md px-3 py-1 text-sm font-medium',
-                  view === id
-                    ? 'bg-white shadow-sm dark:bg-zinc-700'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100',
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-          <label className="relative flex-1">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
-              aria-hidden
-            />
-            <input
-              type="search"
-              autoFocus
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Escape' || !query) return;
-                event.stopPropagation();
-                setQuery('');
-              }}
-              placeholder={VIEWS.find(({ id }) => id === view)?.placeholder}
-              aria-label="Search"
-              className="w-full rounded-lg border border-zinc-200 bg-transparent py-1.5 pr-3 pl-9 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:focus:border-zinc-500"
-            />
-          </label>
-        </div>
-      </header>
-      <RecentlyClosed restoring={restore.isPending} onSelect={showSnapshot} onRestore={restore.mutate} />
-      {view === 'closed' ? (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <ClosedTabs query={search} />
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1">
-          <aside className="flex w-80 shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800">
-            {search ? (
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <SearchResults query={search} onSelect={setSelectedId} />
-              </div>
-            ) : (
-              <Timeline selectedId={selectedId} onSelect={setSelectedId} />
-            )}
-          </aside>
-          <main key={selectedId} className="min-w-0 flex-1 overflow-y-auto">
-            {selectedId !== undefined && (
-              <SnapshotDetail
-                id={selectedId}
-                highlight={search}
-                restoring={restore.isPending}
-                onRestore={restore.mutate}
+        {!settingsOpen && (
+          <div className="flex items-center gap-3">
+            <nav className="flex shrink-0 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+              {VIEWS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={view === id}
+                  onClick={() => setView(id)}
+                  className={cn(
+                    'rounded-md px-3 py-1 text-sm font-medium',
+                    view === id
+                      ? 'bg-white shadow-sm dark:bg-zinc-700'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100',
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <label className="relative flex-1">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+                aria-hidden
               />
-            )}
-          </main>
-        </div>
+              <input
+                type="search"
+                autoFocus
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Escape' || !query) return;
+                  event.stopPropagation();
+                  setQuery('');
+                }}
+                placeholder={VIEWS.find(({ id }) => id === view)?.placeholder}
+                aria-label="Search"
+                className="w-full rounded-lg border border-zinc-200 bg-transparent py-1.5 pr-3 pl-9 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:focus:border-zinc-500"
+              />
+            </label>
+          </div>
+        )}
+      </header>
+      {settingsOpen ? (
+        <SettingsView onBack={() => setSettingsOpen(false)} />
+      ) : (
+        <>
+          {settings?.showRecentlyClosed && (
+            <RecentlyClosed
+              skipAlreadyOpen={settings.skipAlreadyOpen}
+              restoring={restore.isPending}
+              onSelect={showSnapshot}
+              onRestore={restore.mutate}
+            />
+          )}
+          {view === 'closed' ? (
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <ClosedTabs query={search} />
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1">
+              <aside className="flex w-80 shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800">
+                {search ? (
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    <SearchResults query={search} onSelect={setSelectedId} />
+                  </div>
+                ) : (
+                  <Timeline selectedId={selectedId} onSelect={setSelectedId} />
+                )}
+              </aside>
+              <main key={selectedId} className="min-w-0 flex-1 overflow-y-auto">
+                {selectedId !== undefined && (
+                  <SnapshotDetail
+                    id={selectedId}
+                    highlight={search}
+                    restoring={restore.isPending}
+                    onRestore={restore.mutate}
+                  />
+                )}
+              </main>
+            </div>
+          )}
+        </>
       )}
       <div className="absolute right-4 bottom-4 z-20 flex w-96 flex-col gap-2">
         <RestoreFeedback

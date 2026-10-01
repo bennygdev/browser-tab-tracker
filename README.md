@@ -16,6 +16,7 @@ A personal browser extension that records your open tabs, normal and private, so
 - Offers to bring back lost tabs when the browser starts after a crash
 - Writes a silent daily backup to `Downloads/TabTracker/`, and exports or imports your whole history as a file
 - Thins out old history once a day so the database stays small, without ever touching recovery points
+- Lets you tone down the restore prompt, change the restore defaults and hide the Recently closed strip in Settings
 
 Everything stays on your machine. The extension makes no network requests.
 
@@ -37,7 +38,7 @@ Everything stays on your machine. The extension makes no network requests.
 entrypoints/
   background/     Background script: tracking, snapshots, restore, crash recovery
   overlay.ts      Injected into the current page to show the dashboard as a modal
-  dashboard/      Dashboard UI: timeline, snapshot details, recently closed, closed tabs, search, backups
+  dashboard/      Dashboard UI: timeline, snapshot details, recently closed, closed tabs, search, backups, settings
   offscreen/      Chrome only: turns backup data into a file the background script can download
 lib/              Code shared between entrypoints (types, messaging, formatting, search)
 tests/            Unit tests
@@ -59,7 +60,7 @@ assets/icon.svg   Toolbar icon source, PNG sizes are generated at build time
 - Each window comes back as its own new window in its original mode, so private tabs reopen in a private window
 - A single tab or a selection of tabs opens in an existing window of the same mode
 - Tabs that are already open are skipped by default, and new tab pages are left out
-- When more than 10 tabs come back at once, only the first tab per window loads. The rest stay unloaded until you click them
+- When more than 10 tabs come back at once (adjustable in Settings), only the first tab per window loads. The rest stay unloaded until you click them
 - Pages extensions are not allowed to open (such as `javascript:` links, or `about:` and `file:` pages in Firefox) are listed with buttons to copy the address or search for it with your default search engine
 
 ### How crash recovery works
@@ -67,6 +68,8 @@ assets/icon.svg   Toolbar icon source, PNG sizes are generated at build time
 Browsers close windows one at a time when they shut down, and the extension may save in between. So when a new session starts, it walks back from the previous session's last snapshot through any window closes in its final 30 seconds, and marks the last full state as Before browser closed. A window closed before later activity is left out.
 
 About 15 seconds after the browser starts, if any of those tabs are not open, a notification offers to restore them (Restore and Review buttons in Chrome, click to review in Firefox). The dashboard shows the same session under Recently closed until everything is back or you dismiss it.
+
+The notification shows on every browser start where tabs are missing, including after closing the browser on purpose with private windows open. Settings can limit it to sessions that lost private tabs, or turn it off.
 
 ### Backups and history cleanup
 
@@ -80,9 +83,20 @@ Once a day the extension thins out old history and then saves a backup of everyt
 
 Chrome's background service worker cannot create files, so it hands the data to a small offscreen page that turns it into a downloadable file. Firefox does this in the background script directly.
 
+### Settings
+
+The gear button in the dashboard header opens the settings. Changes are saved right away in `storage.local`.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Restore notification | Always | Always, Only when private tabs were lost, or Off. The browser can reopen normal tabs by itself, but never private ones |
+| Skip tabs already open | On | The default for every Restore button. Each snapshot still has its own toggle |
+| Lazy restore threshold | 10 | Restoring more tabs than this loads only the first tab of each window |
+| Show Recently closed | On | Shows or hides the strip above the timeline |
+
 ### How the overlay works
 
-Clicking the toolbar icon (or pressing `Alt+Shift+H`) injects `overlay.ts` into the current tab. It adds a full-page iframe of `dashboard.html` inside a shadow root, which keeps the page's CSS and scripts away from the dashboard. Clicking the icon again, pressing Esc, or clicking outside the panel closes it. Esc in the search box clears the search first.
+Clicking the toolbar icon (or pressing `Alt+Shift+H`) injects `overlay.ts` into the current tab. It adds a full-page iframe of `dashboard.html` inside a shadow root, which keeps the page's CSS and scripts away from the dashboard. Clicking the icon again, pressing Esc, or clicking outside the panel closes it. Esc in the search box clears the search first, and in Settings it goes back to the history.
 
 Browser pages that block injection (the new tab page, `chrome://` and `about:` pages, extension stores) open the dashboard in a small window instead.
 

@@ -110,3 +110,12 @@ export interface ImportResult {
   closedTabs: number;
   closedWindows: number;
 }
+
+export type RestoreNotification = 'always' | 'private' | 'off';
+
+export interface Settings {
+  restoreNotification: RestoreNotification;
+  skipAlreadyOpen: boolean;
+  lazyRestoreThreshold: number;
+  showRecentlyClosed: boolean;
+}

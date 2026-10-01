@@ -6,6 +6,7 @@ import { sendMessage } from '@/lib/messages';
 import { tabMatcher } from '@/lib/search';
 import { countTabs } from '@/lib/tabs';
 import type { RestoreRequest, WindowPlan } from '@/lib/types';
+import { useSettings } from '../hooks';
 import { cn } from '../utils';
 import { Button, CheckboxLabel, Notice, RECOVERY_LABELS, RecoveryBadge } from './ui';
 import { WindowCard } from './WindowCard';
@@ -19,7 +20,8 @@ interface SnapshotDetailProps {
 
 export function SnapshotDetail({ id, highlight, restoring, onRestore }: SnapshotDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [skipAlreadyOpen, setSkipAlreadyOpen] = useState(true);
+  const settings = useSettings();
+  const [skipOverride, setSkipOverride] = useState<boolean>();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const { data: snapshot, isPending, error } = useQuery({
     queryKey: ['snapshot', id],
@@ -30,10 +32,11 @@ export function SnapshotDetail({ id, highlight, restoring, onRestore }: Snapshot
     containerRef.current?.querySelector('[data-match]')?.scrollIntoView({ block: 'center' });
   }, [snapshot, highlight]);
 
-  if (isPending) return <Notice>Loading…</Notice>;
+  if (isPending || !settings) return <Notice>Loading…</Notice>;
   if (error) return <Notice>Couldn't load this snapshot.</Notice>;
   if (!snapshot) return <Notice>This snapshot no longer exists.</Notice>;
 
+  const skipAlreadyOpen = skipOverride ?? settings.skipAlreadyOpen;
   const isMatch = highlight ? tabMatcher(highlight) : () => false;
   const indexed = snapshot.windows.map((win, index) => ({ win, index }));
   const groups = [false, true].map((incognito) => ({
@@ -76,7 +79,7 @@ export function SnapshotDetail({ id, highlight, restoring, onRestore }: Snapshot
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 pt-0.5">
-              <CheckboxLabel checked={skipAlreadyOpen} onChange={setSkipAlreadyOpen}>
+              <CheckboxLabel checked={skipAlreadyOpen} onChange={setSkipOverride}>
                 Skip tabs already open
               </CheckboxLabel>
               <Button variant="primary" onClick={() => restore(snapshot.windows)} disabled={restoring}>

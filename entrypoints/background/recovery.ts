@@ -7,6 +7,7 @@ import { missingTabs } from './open-tabs';
 import { report } from './report';
 import { restoreTabs } from './restore';
 import { previousSession } from './session';
+import { getSettings } from './settings';
 
 const CHECK_ALARM = 'lost-session-check';
 const CHECK_DELAY_MS = 15_000;
@@ -52,9 +53,13 @@ export async function dismissLostSession(snapshotId: number) {
   await browser.storage.local.set({ [DISMISSED_KEY]: snapshotId });
 }
 
-async function notifyLostSession() {
+export async function notifyLostSession() {
+  const { restoreNotification } = await getSettings();
+  if (restoreNotification === 'off') return;
+
   const lost = await findLostSession();
   if (!lost) return;
+  if (restoreNotification === 'private' && !lost.windows.some((win) => win.incognito)) return;
 
   await browser.notifications.create(`${NOTIFICATION_PREFIX}${lost.snapshotId}`, {
     type: 'basic',

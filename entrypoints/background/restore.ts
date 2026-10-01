@@ -1,8 +1,8 @@
 import { countTabs, withoutBlankPages } from '@/lib/tabs';
 import type { RestoreRequest, RestoreResult, TabEntry, TabRecord, WindowPlan } from '@/lib/types';
 import { missingTabs } from './open-tabs';
+import { getSettings } from './settings';
 
-const LAZY_RESTORE_THRESHOLD = 10;
 const COMMIT_TIMEOUT_MS = 15_000;
 
 interface Destination {
@@ -13,7 +13,8 @@ interface Destination {
 export async function restoreTabs({ windows, target, skipAlreadyOpen }: RestoreRequest): Promise<RestoreResult> {
   const wanted = withoutBlankPages(windows);
   const plans = skipAlreadyOpen ? await missingTabs(wanted) : wanted;
-  const lazy = countTabs(plans) > LAZY_RESTORE_THRESHOLD;
+  const { lazyRestoreThreshold } = await getSettings();
+  const lazy = countTabs(plans) > lazyRestoreThreshold;
   const result: RestoreResult = { opened: 0, skipped: countTabs(wanted) - countTabs(plans), failed: [] };
 
   for (const plan of plans) {

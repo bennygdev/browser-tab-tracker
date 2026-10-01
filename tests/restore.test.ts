@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { restoreTabs } from '@/entrypoints/background/restore';
+import { saveSettings } from '@/entrypoints/background/settings';
 import type { TabRecord, WindowPlan } from '@/lib/types';
 import { fakeTab, setOpenWindows } from './helpers';
 
@@ -118,6 +119,18 @@ describe('restoreTabs', () => {
     expect(createdTabs[0]).not.toHaveProperty('discarded');
     expect(createdTabs[1]).toMatchObject({ discarded: true, title: 'Title of https://site1.example' });
     expect(browser.tabs.discard).not.toHaveBeenCalled();
+  });
+
+  it('uses the lazy restore threshold from settings', async () => {
+    await saveSettings({ lazyRestoreThreshold: 2 });
+    const urls = ['https://a.example', 'https://b.example', 'https://c.example'];
+    await restoreTabs({ windows: [planOf(urls)], target: 'new-window', skipAlreadyOpen: false });
+
+    for (const [index, url] of urls.entries()) {
+      await fakeBrowser.tabs.onUpdated.trigger(200 + index, { status: 'loading' }, fakeTab(200 + index, url));
+    }
+
+    await vi.waitFor(() => expect(browser.tabs.discard).toHaveBeenCalledTimes(2));
   });
 
   it('keeps every tab loaded for small restores', async () => {

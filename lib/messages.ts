@@ -8,6 +8,7 @@ import type {
   RestoreRequest,
   RestoreResult,
   SearchResult,
+  Settings,
   Snapshot,
   SnapshotSummary,
   SnapshotsRequest,
@@ -26,6 +27,8 @@ interface ProtocolMap {
   searchForTab(tab: TabEntry): void;
   exportBackup(): boolean;
   importBackup(text: string): ImportResult;
+  getSettings(): Settings;
+  saveSettings(changes: Partial<Settings>): void;
   createObjectUrl(file: { text: string; type: string }): string;
 }
 

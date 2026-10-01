@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { dismissLostSession, findLostSession } from '@/entrypoints/background/recovery';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { dismissLostSession, findLostSession, notifyLostSession } from '@/entrypoints/background/recovery';
+import { saveSettings } from '@/entrypoints/background/settings';
 import { takeSnapshot } from '@/entrypoints/background/snapshots';
 import { restartBrowser, setOpenWindows } from './helpers';
 
@@ -49,5 +50,48 @@ describe('findLostSession', () => {
     setOpenWindows([{ id: 1, tabs: ['https://a.example'] }]);
 
     expect(await findLostSession()).toBeNull();
+  });
+});
+
+describe('notifyLostSession', () => {
+  beforeEach(() => {
+    vi.spyOn(browser.notifications, 'create').mockImplementation(async () => '');
+  });
+
+  const lostNormalTabs = () => crashWith([{ id: 1, tabs: ['https://a.example'] }]);
+  const lostPrivateTabs = () => crashWith([{ id: 2, incognito: true, tabs: ['https://private.example'] }]);
+
+  it('offers to restore by default', async () => {
+    await lostNormalTabs();
+    setOpenWindows([{ id: 7, tabs: [] }]);
+
+    await notifyLostSession();
+
+    expect(browser.notifications.create).toHaveBeenCalledOnce();
+  });
+
+  it('stays quiet when turned off', async () => {
+    await saveSettings({ restoreNotification: 'off' });
+    await lostPrivateTabs();
+    setOpenWindows([{ id: 7, tabs: [] }]);
+
+    await notifyLostSession();
+
+    expect(browser.notifications.create).not.toHaveBeenCalled();
+  });
+
+  it('only asks about private tabs when set to private', async () => {
+    await saveSettings({ restoreNotification: 'private' });
+    await lostNormalTabs();
+    setOpenWindows([{ id: 7, tabs: [] }]);
+
+    await notifyLostSession();
+    expect(browser.notifications.create).not.toHaveBeenCalled();
+
+    await lostPrivateTabs();
+    setOpenWindows([{ id: 7, tabs: [] }]);
+
+    await notifyLostSession();
+    expect(browser.notifications.create).toHaveBeenCalledOnce();
   });
 });
