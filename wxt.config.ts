@@ -15,6 +15,7 @@ export default defineConfig({
       'alarms',
       'downloads',
       'notifications',
+      'search',
       'scripting',
       'storage',
       'tabs',

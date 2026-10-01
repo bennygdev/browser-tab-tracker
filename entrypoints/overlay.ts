@@ -28,6 +28,7 @@ export default defineUnlistedScript(() => {
     }
   `;
   frame.src = browser.runtime.getURL('/dashboard.html');
+  frame.allow = 'clipboard-write';
   frame.addEventListener('load', () => frame.focus(), { once: true });
 
   const controller = new AbortController();

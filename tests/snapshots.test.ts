@@ -75,6 +75,37 @@ describe('takeSnapshot', () => {
     expect(after?.recovery).toBeUndefined();
   });
 
+  it('records closed windows with their tabs', async () => {
+    setOpenWindows([
+      { id: 1, tabs: ['https://a.example'] },
+      { id: 2, incognito: true, tabs: ['https://private.example'] },
+    ]);
+    await takeSnapshot();
+
+    setOpenWindows([{ id: 1, tabs: ['https://a.example'] }]);
+    await takeSnapshot();
+
+    const [before] = await db.snapshots.toArray();
+    expect(await db.closedWindows.toArray()).toMatchObject([
+      { snapshotId: before?.id, incognito: true, tabs: [{ url: 'https://private.example' }] },
+    ]);
+  });
+
+  it('does not treat a window whose tabs were moved elsewhere as closed', async () => {
+    setOpenWindows([
+      { id: 1, tabs: ['https://a.example'] },
+      { id: 2, tabs: ['https://b.example'] },
+    ]);
+    await takeSnapshot();
+
+    setOpenWindows([{ id: 1, tabs: ['https://a.example', 'https://b.example'] }]);
+    await takeSnapshot();
+
+    const [before] = await db.snapshots.toArray();
+    expect(await db.closedWindows.count()).toBe(0);
+    expect(before?.recovery).toBeUndefined();
+  });
+
   it('marks the snapshot before 5 or more tabs closed at once as a recovery point', async () => {
     const urls = Array.from({ length: 6 }, (_, i) => `https://site${i}.example`);
     setOpenWindows([{ id: 1, tabs: urls }]);

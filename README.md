@@ -2,7 +2,7 @@
 
 A personal browser extension that records your open tabs, normal and private, so you can get them back after a crash, a blackout, or an accidental close.
 
-> Status: early development. Not everything below is built yet.
+> Status: early development. Daily backups are not built yet.
 
 ## What it does
 
@@ -11,7 +11,8 @@ A personal browser extension that records your open tabs, normal and private, so
 - Never overwrites history. A crash or a closed window just adds a new snapshot, and the earlier ones stay
 - Shows your history by day (dd/mm/yyyy) in an overlay on top of the page you are on, opened from the toolbar icon or `Alt+Shift+H`
 - Searches every tab you have had open by title or URL, and lists the tabs you closed
-- Restores a whole snapshot, one window, or only the tabs you pick, into a normal or private window
+- Restores a whole snapshot, one window, a single tab, or only the tabs you pick, with private tabs going back into private windows
+- Keeps a list of recently closed windows, private ones included, with one-click restore
 - Offers to bring back lost tabs when the browser starts after a crash
 - Writes a silent daily backup to `Downloads/TabTracker/`
 
@@ -33,10 +34,10 @@ Everything stays on your machine. The extension makes no network requests.
 
 ```
 entrypoints/
-  background/     Background script: tab tracking, snapshots, opening the dashboard
+  background/     Background script: tracking, snapshots, restore, crash recovery
   overlay.ts      Injected into the current page to show the dashboard as a modal
-  dashboard/      Dashboard UI: timeline, snapshot details, closed tabs, search
-lib/              Code shared between entrypoints (types, messaging, search)
+  dashboard/      Dashboard UI: timeline, snapshot details, recently closed, closed tabs, search
+lib/              Code shared between entrypoints (types, messaging, formatting, search)
 tests/            Unit tests
 assets/icon.svg   Toolbar icon source, PNG sizes are generated at build time
 ```
@@ -48,8 +49,22 @@ assets/icon.svg   Toolbar icon source, PNG sizes are generated at build time
 - A snapshot is only saved when the set of open tabs actually changed. Title-only changes refresh the latest snapshot instead of adding a new one
 - Snapshots are never deleted or replaced, and an empty state is never saved
 - Each browser launch starts a new session, detected through `storage.session` (which the browser clears on restart). The previous session's last snapshot is kept as is, so tabs lost in a crash are still there
-- The snapshot right before a window closes, 5 or more tabs close at once, or a session ends is marked as a recovery point
-- Tabs you close one at a time go to a closed tabs list. Tabs that close along with their window stay in the recovery point instead
+- Recovery points are marked as Before window closed, Before tabs closed (5 or more at once) or Before browser closed
+- Tabs you close one at a time go to a closed tabs list. Closed windows are kept with all their tabs and show up under Recently closed until they are open again
+
+### How restore works
+
+- Each window comes back as its own new window in its original mode, so private tabs reopen in a private window
+- A single tab or a selection of tabs opens in an existing window of the same mode
+- Tabs that are already open are skipped by default, and new tab pages are left out
+- When more than 10 tabs come back at once, only the first tab per window loads. The rest stay unloaded until you click them
+- Pages extensions are not allowed to open (such as `javascript:` links, or `about:` and `file:` pages in Firefox) are listed with buttons to copy the address or search for it with your default search engine
+
+### How crash recovery works
+
+Browsers close windows one at a time when they shut down, and the extension may save in between. So when a new session starts, it walks back from the previous session's last snapshot through any window closes in its final 30 seconds, and marks the last full state as Before browser closed. A window closed before later activity is left out.
+
+About 15 seconds after the browser starts, if any of those tabs are not open, a notification offers to restore them (Restore and Review buttons in Chrome, click to review in Firefox). The dashboard shows the same session under Recently closed until everything is back or you dismiss it.
 
 ### How the overlay works
 
@@ -102,6 +117,7 @@ Temporary add-ons are removed when Firefox restarts. A permanent install comes l
 | `activeTab`, `scripting` | Show the overlay on the current page when you click the icon |
 | `alarms` | Daily backup and a periodic consistency check |
 | `notifications` | Offer to restore tabs after a crash |
+| `search` | Search for pages the extension is not allowed to reopen |
 | `downloads` | Write backups to `Downloads/TabTracker/` |
 
 No host permissions, and nothing runs on a page until you click the icon.

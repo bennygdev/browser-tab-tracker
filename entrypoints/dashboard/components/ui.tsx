@@ -1,22 +1,69 @@
 import { EyeOff, Pin } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+import { formatDay } from '@/lib/format';
 import type { RecoveryReason, TabRecord } from '@/lib/types';
-import { formatDay } from '../dates';
+import { cn } from '../utils';
 
 export const RECOVERY_LABELS: Record<RecoveryReason, { label: string; description: string }> = {
   'window-closed': {
-    label: 'Window closed',
+    label: 'Before window closed',
     description: 'Saved right before a window was closed.',
   },
   'tab-drop': {
-    label: 'Tabs closed',
+    label: 'Before tabs closed',
     description: 'Saved right before 5 or more tabs were closed at once.',
   },
   'session-end': {
-    label: 'Session end',
-    description: 'The last snapshot before the browser was closed or crashed.',
+    label: 'Before browser closed',
+    description: 'The last full snapshot before the browser was closed or crashed.',
   },
 };
+
+const BUTTON_VARIANTS = {
+  primary: 'bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300',
+  secondary:
+    'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800',
+  ghost:
+    'text-zinc-500 hover:bg-zinc-900/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100',
+};
+
+interface ButtonProps extends ComponentProps<'button'> {
+  variant?: keyof typeof BUTTON_VARIANTS;
+}
+
+export function Button({ variant = 'secondary', className, ...props }: ButtonProps) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium disabled:pointer-events-none disabled:opacity-50',
+        BUTTON_VARIANTS[variant],
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+interface CheckboxLabelProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  children: ReactNode;
+}
+
+export function CheckboxLabel({ checked, onChange, children }: CheckboxLabelProps) {
+  return (
+    <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="size-3.5 accent-zinc-900 dark:accent-zinc-100"
+      />
+      {children}
+    </label>
+  );
+}
 
 export function Notice({ children }: { children: ReactNode }) {
   return <p className="p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">{children}</p>;
@@ -68,14 +115,9 @@ export function TabLabel({ url, title, pinned }: TabRecord) {
 export function LoadMoreButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
   return (
     <div className="p-4 text-center">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={loading}
-        className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
-      >
+      <Button variant="ghost" onClick={onClick} disabled={loading}>
         {loading ? 'Loading…' : 'Load older'}
-      </button>
+      </Button>
     </div>
   );
 }

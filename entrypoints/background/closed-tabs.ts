@@ -1,18 +1,9 @@
+import { isBlankPage } from '@/lib/tabs';
+import type { TabEntry } from '@/lib/types';
 import { db } from './db';
 import { currentSessionId } from './session';
-import type { CachedTab } from './tab-cache';
 
-const BLANK_PAGES = new Set([
-  '',
-  'about:blank',
-  'about:home',
-  'about:newtab',
-  'about:privatebrowsing',
-  'chrome://newtab/',
-  'chrome://new-tab-page/',
-]);
-
-export async function logClosedTab(tab: CachedTab) {
-  if (BLANK_PAGES.has(tab.url)) return;
+export async function logClosedTab(tab: TabEntry) {
+  if (isBlankPage(tab.url)) return;
   await db.closedTabs.add({ ...tab, sessionId: await currentSessionId(), closedAt: Date.now() });
 }

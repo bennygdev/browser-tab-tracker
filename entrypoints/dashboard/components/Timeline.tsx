@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { formatDate, formatShortTime, formatTime, plural } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
 import type { SnapshotSummary } from '@/lib/types';
-import { formatDate, formatShortTime, formatTime } from '../dates';
 import { usePagedQuery } from '../hooks';
-import { chunkBy, cn, plural } from '../utils';
-import { DayHeader, LoadMoreButton, Notice, PrivateBadge, RecoveryBadge } from './ui';
+import { chunkBy, cn } from '../utils';
+import { CheckboxLabel, DayHeader, LoadMoreButton, Notice, PrivateBadge, RecoveryBadge } from './ui';
 
 interface TimelineProps {
   selectedId?: number;
@@ -12,9 +12,26 @@ interface TimelineProps {
 }
 
 export function Timeline({ selectedId, onSelect }: TimelineProps) {
+  const [recoveryOnly, setRecoveryOnly] = useState(false);
+
+  return (
+    <>
+      <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-800">
+        <CheckboxLabel checked={recoveryOnly} onChange={setRecoveryOnly}>
+          Recovery points only
+        </CheckboxLabel>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <TimelineList recoveryOnly={recoveryOnly} selectedId={selectedId} onSelect={onSelect} />
+      </div>
+    </>
+  );
+}
+
+function TimelineList({ recoveryOnly, selectedId, onSelect }: TimelineProps & { recoveryOnly: boolean }) {
   const { items, isPending, error, hasNextPage, fetchNextPage, isFetchingNextPage } = usePagedQuery(
-    ['snapshots'],
-    (page) => sendMessage('getSnapshotSummaries', page),
+    ['snapshots', recoveryOnly],
+    (page) => sendMessage('getSnapshotSummaries', { ...page, recoveryOnly }),
   );
   const latestId = items[0]?.id;
 
@@ -24,7 +41,13 @@ export function Timeline({ selectedId, onSelect }: TimelineProps) {
 
   if (isPending) return <Notice>Loading…</Notice>;
   if (error) return <Notice>Couldn't load your history.</Notice>;
-  if (items.length === 0) return <Notice>No snapshots yet. Open or close a tab and it shows up here.</Notice>;
+  if (items.length === 0) {
+    return (
+      <Notice>
+        {recoveryOnly ? 'No recovery points yet.' : 'No snapshots yet. Open or close a tab and it shows up here.'}
+      </Notice>
+    );
+  }
 
   return (
     <div>

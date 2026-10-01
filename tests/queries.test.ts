@@ -2,18 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { db } from '@/entrypoints/background/db';
 import {
   getClosedTabs,
+  getClosedWindows,
   getSnapshot,
   getSnapshotSummaries,
   searchSnapshots,
 } from '@/entrypoints/background/queries';
-import type { WindowRecord } from '@/lib/types';
+import type { RecoveryReason, WindowRecord } from '@/lib/types';
+import { setOpenWindows } from './helpers';
 
 function windowOf(id: number, urls: string[], incognito = false): WindowRecord {
   return { id, incognito, tabs: urls.map((url) => ({ url, title: `Title of ${url}`, pinned: false })) };
 }
 
-async function addSnapshot(createdAt: number, windows: WindowRecord[]) {
-  return db.snapshots.add({ sessionId: 1, createdAt, windows });
+async function addSnapshot(createdAt: number, windows: WindowRecord[], recovery?: RecoveryReason) {
+  return db.snapshots.add({ sessionId: 1, createdAt, windows, recovery });
+}
+
+function closedWindowOf(closedAt: number, url: string, incognito = false) {
+  return { sessionId: 1, snapshotId: 1, closedAt, incognito, tabs: windowOf(1, [url]).tabs };
 }
 
 async function addClosedTab(closedAt: number, url: string) {
@@ -29,7 +35,7 @@ describe('getSnapshotSummaries', () => {
       windowOf(2, ['https://private.example'], true),
     ]);
 
-    const summaries = await getSnapshotSummaries({ limit: 10 });
+    const summaries = await getSnapshotSummaries({ limit: 10, recoveryOnly: false });
 
     expect(summaries).toMatchObject([
       { createdAt: 200, sessionStartedAt: 50, tabCount: 3, privateTabCount: 1 },
@@ -41,11 +47,36 @@ describe('getSnapshotSummaries', () => {
   it('pages through older snapshots', async () => {
     for (let i = 1; i <= 5; i++) await addSnapshot(i * 100, [windowOf(1, ['https://a.example'])]);
 
-    const first = await getSnapshotSummaries({ limit: 2 });
-    const second = await getSnapshotSummaries({ before: first.at(-1)?.id, limit: 2 });
+    const first = await getSnapshotSummaries({ limit: 2, recoveryOnly: false });
+    const second = await getSnapshotSummaries({ before: first.at(-1)?.id, limit: 2, recoveryOnly: false });
 
     expect(first.map((s) => s.createdAt)).toEqual([500, 400]);
     expect(second.map((s) => s.createdAt)).toEqual([300, 200]);
+  });
+
+  it('can return recovery points only', async () => {
+    await addSnapshot(100, [windowOf(1, ['https://a.example'])], 'window-closed');
+    await addSnapshot(200, [windowOf(1, ['https://b.example'])]);
+    await addSnapshot(300, [windowOf(1, ['https://c.example'])], 'session-end');
+
+    const summaries = await getSnapshotSummaries({ limit: 10, recoveryOnly: true });
+
+    expect(summaries.map((s) => s.recovery)).toEqual(['session-end', 'window-closed']);
+  });
+});
+
+describe('getClosedWindows', () => {
+  it('returns the newest closed windows that still have tabs to bring back', async () => {
+    setOpenWindows([{ id: 9, tabs: ['https://open.example'] }]);
+    await db.closedWindows.bulkAdd([
+      closedWindowOf(100, 'https://private.example', true),
+      closedWindowOf(200, 'https://open.example'),
+      closedWindowOf(300, 'https://gone.example'),
+    ]);
+
+    const windows = await getClosedWindows(5);
+
+    expect(windows.map((win) => win.closedAt)).toEqual([300, 100]);
   });
 });
 

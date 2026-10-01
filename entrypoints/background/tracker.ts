@@ -1,5 +1,6 @@
 import { debounce } from '@/lib/debounce';
 import { logClosedTab } from './closed-tabs';
+import { report } from './report';
 import { takeSnapshot } from './snapshots';
 import { forgetTab, rememberTab } from './tab-cache';
 
@@ -63,8 +64,4 @@ async function recordRemoval(tabId: number, isWindowClosing: boolean) {
 async function ensureCheckAlarm() {
   if (await browser.alarms.get(CHECK_ALARM)) return;
   await browser.alarms.create(CHECK_ALARM, { periodInMinutes: CHECK_INTERVAL_MINUTES });
-}
-
-function report(error: unknown) {
-  console.error('[Tab Tracker]', error);
 }

@@ -1,7 +1,12 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { sendMessage } from '@/lib/messages';
 import { OVERLAY_CLOSE_MESSAGE } from '@/lib/overlay';
+import type { RestoreRequest } from '@/lib/types';
 import { ClosedTabs } from './components/ClosedTabs';
+import { RecentlyClosed } from './components/RecentlyClosed';
+import { RestoreFeedback } from './components/RestoreFeedback';
 import { SearchResults } from './components/SearchResults';
 import { SnapshotDetail } from './components/SnapshotDetail';
 import { Timeline } from './components/Timeline';
@@ -16,6 +21,7 @@ const VIEWS: { id: View; label: string; placeholder: string }[] = [
 ];
 
 const embedded = window.top !== window;
+const initialSnapshotId = Number(new URLSearchParams(location.search).get('snapshot')) || undefined;
 
 function close() {
   if (embedded) window.parent.postMessage(OVERLAY_CLOSE_MESSAGE, '*');
@@ -25,8 +31,22 @@ function close() {
 export default function App() {
   const [view, setView] = useState<View>('timeline');
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<number>();
+  const [selectedId, setSelectedId] = useState(initialSnapshotId);
   const search = useDebouncedValue(query.trim(), 200);
+  const queryClient = useQueryClient();
+  const restore = useMutation({
+    mutationFn: (request: RestoreRequest) => sendMessage('restoreTabs', request),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['lost-session'] });
+      void queryClient.invalidateQueries({ queryKey: ['closed-windows'] });
+    },
+  });
+
+  const showSnapshot = (snapshotId: number) => {
+    setView('timeline');
+    setQuery('');
+    setSelectedId(snapshotId);
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -46,7 +66,7 @@ export default function App() {
       aria-modal="true"
       aria-labelledby="dashboard-title"
       className={cn(
-        'flex flex-col bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100',
+        'relative flex flex-col bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100',
         embedded
           ? 'h-[min(85vh,800px)] w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 dark:ring-white/10'
           : 'h-screen w-screen',
@@ -110,24 +130,35 @@ export default function App() {
           </label>
         </div>
       </header>
+      <RecentlyClosed restoring={restore.isPending} onSelect={showSnapshot} onRestore={restore.mutate} />
       {view === 'closed' ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
           <ClosedTabs query={search} />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1">
-          <aside className="w-80 shrink-0 overflow-y-auto border-r border-zinc-200 dark:border-zinc-800">
+          <aside className="flex w-80 shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800">
             {search ? (
-              <SearchResults query={search} onSelect={setSelectedId} />
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <SearchResults query={search} onSelect={setSelectedId} />
+              </div>
             ) : (
               <Timeline selectedId={selectedId} onSelect={setSelectedId} />
             )}
           </aside>
           <main key={selectedId} className="min-w-0 flex-1 overflow-y-auto">
-            {selectedId !== undefined && <SnapshotDetail id={selectedId} highlight={search} />}
+            {selectedId !== undefined && (
+              <SnapshotDetail
+                id={selectedId}
+                highlight={search}
+                restoring={restore.isPending}
+                onRestore={restore.mutate}
+              />
+            )}
           </main>
         </div>
       )}
+      <RestoreFeedback result={restore.data} error={restore.error} onDismiss={restore.reset} />
     </div>
   );
 

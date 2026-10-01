@@ -1,18 +1,30 @@
 import { SEARCH_LIMIT, tabMatcher } from '@/lib/search';
+import { countTabs, isBlankPage, tabKey } from '@/lib/tabs';
 import type {
   ClosedTab,
   ClosedTabsRequest,
-  PageRequest,
+  ClosedWindow,
   SearchResult,
   Snapshot,
   SnapshotSummary,
+  SnapshotsRequest,
 } from '@/lib/types';
-import { countTabs } from '@/lib/windows';
 import { db } from './db';
+import { openTabKeys } from './open-tabs';
 
-export async function getSnapshotSummaries({ before, limit }: PageRequest): Promise<SnapshotSummary[]> {
+const CLOSED_WINDOW_SCAN = 50;
+
+export async function getSnapshotSummaries({
+  before,
+  limit,
+  recoveryOnly,
+}: SnapshotsRequest): Promise<SnapshotSummary[]> {
   const page = before === undefined ? db.snapshots.toCollection() : db.snapshots.where('id').below(before);
-  const snapshots = await page.reverse().limit(limit).toArray();
+  const snapshots = await page
+    .reverse()
+    .filter((snapshot) => !recoveryOnly || snapshot.recovery !== undefined)
+    .limit(limit)
+    .toArray();
 
   const sessions = await db.sessions.bulkGet([...new Set(snapshots.map((snapshot) => snapshot.sessionId))]);
   const startedAt = new Map(sessions.flatMap((session) => (session ? [[session.id, session.startedAt]] : [])));
@@ -34,6 +46,16 @@ export async function getClosedTabs({ before, limit, query }: ClosedTabsRequest)
   return page.reverse().filter(tabMatcher(query)).limit(limit).toArray();
 }
 
+export async function getClosedWindows(limit: number): Promise<ClosedWindow[]> {
+  const [recent, open] = await Promise.all([
+    db.closedWindows.reverse().limit(CLOSED_WINDOW_SCAN).toArray(),
+    openTabKeys(),
+  ]);
+  return recent
+    .filter((win) => win.tabs.some((tab) => !isBlankPage(tab.url) && !open.has(tabKey(tab.url, win.incognito))))
+    .slice(0, limit);
+}
+
 export async function searchSnapshots(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
@@ -47,7 +69,7 @@ export async function searchSnapshots(query: string): Promise<SearchResult[]> {
     .each((snapshot) => {
       for (const { incognito, tabs } of snapshot.windows) {
         for (const { url, title, pinned } of tabs) {
-          const key = `${incognito}:${url}`;
+          const key = tabKey(url, incognito);
           if (isFull() || results.has(key) || !matches({ url, title })) continue;
           results.set(key, { url, title, pinned, incognito, seenAt: snapshot.createdAt, snapshotId: snapshot.id });
         }

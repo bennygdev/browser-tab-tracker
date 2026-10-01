@@ -1,8 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { formatDate, formatShortTime } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
 import { SEARCH_LIMIT } from '@/lib/search';
-import { formatDate, formatShortTime } from '../dates';
 import { cn } from '../utils';
 import { Notice, PrivateBadge, TabLabel } from './ui';
 

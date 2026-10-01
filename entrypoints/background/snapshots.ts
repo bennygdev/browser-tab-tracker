@@ -1,5 +1,5 @@
+import { countTabs, tabKey } from '@/lib/tabs';
 import type { RecoveryReason, Snapshot, WindowRecord } from '@/lib/types';
-import { countTabs } from '@/lib/windows';
 import { db } from './db';
 import { toWindowRecord } from './records';
 import { currentSessionId } from './session';
@@ -18,15 +18,17 @@ export async function takeSnapshot() {
   if (windows.length === 0) return;
 
   const sessionId = await currentSessionId();
-  await db.transaction('rw', db.snapshots, async () => {
+  await db.transaction('rw', db.snapshots, db.closedWindows, async () => {
     const previous = await db.snapshots.where('sessionId').equals(sessionId).last();
 
     if (previous && layoutOf(previous.windows) === layoutOf(windows)) {
       await refreshTitles(previous, windows);
       return;
     }
-    if (previous) await flagRecoveryPoint(previous, windows);
-    await db.snapshots.add({ sessionId, createdAt: Date.now(), windows });
+
+    const createdAt = Date.now();
+    if (previous) await recordClosures(previous, windows, createdAt);
+    await db.snapshots.add({ sessionId, createdAt, windows });
   });
 }
 
@@ -35,21 +37,42 @@ async function refreshTitles(snapshot: Snapshot, windows: WindowRecord[]) {
   await db.snapshots.update(snapshot.id, { windows });
 }
 
-async function flagRecoveryPoint(snapshot: Snapshot, windows: WindowRecord[]) {
-  const reason = recoveryReason(snapshot.windows, windows);
-  if (!reason || snapshot.recovery) return;
-  await db.snapshots.update(snapshot.id, { recovery: reason });
+async function recordClosures(previous: Snapshot, windows: WindowRecord[], closedAt: number) {
+  const closed = findClosedWindows(previous.windows, windows);
+  await db.closedWindows.bulkAdd(
+    closed.map(({ incognito, tabs }) => ({
+      sessionId: previous.sessionId,
+      snapshotId: previous.id,
+      closedAt,
+      incognito,
+      tabs,
+    })),
+  );
+
+  const reason = recoveryReason(previous.windows, windows, closed.length);
+  if (reason && !previous.recovery) await db.snapshots.update(previous.id, { recovery: reason });
+}
+
+function findClosedWindows(before: WindowRecord[], after: WindowRecord[]) {
+  const remaining = new Set(after.map((win) => win.id));
+  const stillOpen = new Set(after.flatMap((win) => win.tabs.map((tab) => tabKey(tab.url, win.incognito))));
+  return before.filter(
+    (win) => !remaining.has(win.id) && win.tabs.some((tab) => !stillOpen.has(tabKey(tab.url, win.incognito))),
+  );
+}
+
+function recoveryReason(
+  before: WindowRecord[],
+  after: WindowRecord[],
+  closedWindowCount: number,
+): RecoveryReason | undefined {
+  if (closedWindowCount > 0) return 'window-closed';
+  if (countTabs(before) - countTabs(after) >= TAB_DROP_THRESHOLD) return 'tab-drop';
+  return undefined;
 }
 
 function layoutOf(windows: WindowRecord[]) {
   return JSON.stringify(
     windows.map(({ id, incognito, tabs }) => [id, incognito, tabs.map(({ url, pinned }) => [url, pinned])]),
   );
-}
-
-function recoveryReason(before: WindowRecord[], after: WindowRecord[]): RecoveryReason | undefined {
-  const remaining = new Set(after.map((win) => win.id));
-  if (before.some((win) => !remaining.has(win.id))) return 'window-closed';
-  if (countTabs(before) - countTabs(after) >= TAB_DROP_THRESHOLD) return 'tab-drop';
-  return undefined;
 }
