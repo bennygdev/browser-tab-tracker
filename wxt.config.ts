@@ -7,6 +7,18 @@ export default defineConfig({
   autoIcons: {
     baseIconPath: 'assets/icon.svg',
   },
+  zip: {
+    includeSources: [
+      'assets/**',
+      'entrypoints/**',
+      'lib/**',
+      'README.md',
+      'package.json',
+      'package-lock.json',
+      'tsconfig.json',
+      'wxt.config.ts',
+    ],
+  },
   manifest: ({ browser }) => ({
     name: 'Tab Tracker',
     incognito: 'spanning',

@@ -114,11 +114,32 @@ npm run dev            # Chrome with live reload
 npm run dev:firefox    # Firefox with live reload
 npm run build          # outputs .output/chrome-mv3
 npm run build:firefox  # outputs .output/firefox-mv3
+npm run sign:firefox   # signed .xpi for a permanent Firefox install, see below
 npm run compile        # type check
 npm test               # unit tests
 ```
 
-## Loading the extension
+`dev` is for working on the code. `build` and `build:firefox` make the minified production build, which is what you install.
+
+## Installing
+
+**Firefox**
+
+Firefox only keeps add-ons that Mozilla has signed. Signing is free, and an unlisted add-on is not published on addons.mozilla.org, it is only signed for your own use.
+
+1. Sign in to [addons.mozilla.org](https://addons.mozilla.org), open the [API key page](https://addons.mozilla.org/developers/addon/api/key/) and generate credentials
+2. Put them in a `.env` file in the project root (it is gitignored):
+   ```
+   WEB_EXT_API_KEY=user:12345678:123
+   WEB_EXT_API_SECRET=your-secret
+   ```
+3. Run `npm run sign:firefox`. It builds the extension, uploads it together with its source code for Mozilla's review, waits for the signature and saves the signed `.xpi` in `web-ext-artifacts/`
+4. In Firefox, open `about:addons`, click the gear, choose Install Add-on From File and pick the `.xpi`
+5. Allow it to run in private windows when Firefox asks (or later in the extension's Details)
+
+To update, raise `version` in `package.json` (Mozilla signs each version only once), run `npm run sign:firefox` again and install the new `.xpi` the same way. Your history is kept. Removing the extension deletes its history, so export it first if you ever need to reinstall.
+
+While developing you can skip signing: open `about:debugging#/runtime/this-firefox`, click Load Temporary Add-on and pick `.output/firefox-mv3/manifest.json`. Firefox removes it again when it restarts.
 
 **Chrome**
 
@@ -127,14 +148,7 @@ npm test               # unit tests
 3. Click Load unpacked and pick `.output/chrome-mv3`
 4. Open the extension's Details and turn on Allow in Incognito
 
-**Firefox**
-
-1. Run `npm run build:firefox`
-2. Open `about:debugging#/runtime/this-firefox`
-3. Click Load Temporary Add-on and pick `.output/firefox-mv3/manifest.json`
-4. In `about:addons`, open the extension and set Run in Private Windows to Allow
-
-Temporary add-ons are removed when Firefox restarts. A permanent install comes later.
+Chrome keeps unpacked extensions across restarts, but reads them from that folder, so every new build replaces the installed extension the next time Chrome reloads it.
 
 ## Permissions
 
