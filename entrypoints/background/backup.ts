@@ -21,7 +21,7 @@ export function buildBackup(): Promise<Backup> {
 
 export function writeDailyBackup() {
   const weekday = new Date().toLocaleDateString('en-GB', { weekday: 'long' }).toLowerCase();
-  return saveBackup(`${BACKUP_FOLDER}/backup-${weekday}.json`, true);
+  return saveBackup(`${BACKUP_FOLDER}/${import.meta.env.BROWSER}/backup-${weekday}.json`, true);
 }
 
 export function exportBackup() {

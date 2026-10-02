@@ -2,7 +2,7 @@
   "name": "browser-tab-tracker",
   "description": "Records your open tabs, including private ones, so you can restore them after a crash or an accidental close.",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",

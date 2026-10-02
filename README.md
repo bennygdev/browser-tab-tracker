@@ -9,7 +9,7 @@ A personal browser extension that records your open tabs, normal and private, so
 - Saves a snapshot of every window and tab whenever your tabs change (open, close, move, navigate)
 - Keeps normal and private tabs apart, so you always know which is which
 - Never overwrites history. A crash or a closed window just adds a new snapshot, and the earlier ones stay
-- Shows your history by day (dd/mm/yyyy) in an overlay on top of the page you are on, opened from the toolbar icon or `Alt+Shift+H`
+- Shows your history by day (dd/mm/yyyy) in an overlay on top of the page you are on, opened from the toolbar icon or `Ctrl+Shift+Y`
 - Searches every tab you have had open by title or URL, and lists the tabs you closed
 - Restores a whole snapshot, one window, a single tab, or only the tabs you pick, with private tabs going back into private windows
 - Keeps a list of recently closed windows, private ones included, with one-click restore
@@ -76,7 +76,7 @@ The notification shows on every browser start where tabs are missing, including 
 Once a day the extension thins out old history and then saves a backup of everything:
 
 - Everything from the last 7 days is kept. Between 7 and 30 days, the last snapshot of each hour is kept for every browser session, and after that the last snapshot of each day. Recovery points are never removed. Closed tabs and windows are kept for 90 days
-- The backup goes to `Downloads/TabTracker/backup-<weekday>.json`, one file per weekday, so the last 7 days are always on disk
+- The backup goes to `Downloads/TabTracker/<browser>/backup-<weekday>.json` (`chrome` or `firefox`), one file per weekday, so each browser always has its last 7 days on disk
 - In Chrome the download bubble is hidden while the backup is saved and the entry is removed from the download list afterwards (the file stays). Firefox has no way to hide it, so its downloads panel may show the backup once a day
 - Export in the dashboard saves the same data on demand as `tab-tracker-export-<dd-mm-yyyy>.json`
 - Import accepts a backup or an export and merges it into the current history, skipping anything that is already there, so it is safe after a reinstall or on another computer. History is sorted by time, so imported days fall into place
@@ -96,13 +96,13 @@ The gear button in the dashboard header opens the settings. Changes are saved ri
 
 ### How the overlay works
 
-Clicking the toolbar icon (or pressing `Alt+Shift+H`) injects `overlay.ts` into the current tab. It adds a full-page iframe of `dashboard.html` inside a shadow root, which keeps the page's CSS and scripts away from the dashboard. Clicking the icon again, pressing Esc, or clicking outside the panel closes it. Esc in the search box clears the search first, and in Settings it goes back to the history.
+Clicking the toolbar icon (or pressing `Ctrl+Shift+Y`) injects `overlay.ts` into the current tab. It adds a full-page iframe of `dashboard.html` inside a shadow root, which keeps the page's CSS and scripts away from the dashboard. Clicking the icon again, pressing Esc, or clicking outside the panel closes it. Esc in the search box clears the search first, and in Settings it goes back to the history.
 
 Browser pages that block injection (the new tab page, `chrome://` and `about:` pages, extension stores) open the dashboard in a small window instead.
 
 The dashboard never opens the database itself. It asks the background script over extension messaging, which works the same when the overlay is open in a private window.
 
-The shortcut can be changed in `chrome://extensions/shortcuts` (Chrome) or under Manage Extension Shortcuts in `about:addons` (Firefox).
+The shortcut can be changed in `chrome://extensions/shortcuts` (Chrome) or under Manage Extension Shortcuts in `about:addons` (Firefox). In Firefox on Windows and Linux, avoid Alt+Shift with a letter: Firefox uses it for its menus (Alt+Shift+H opens Help) and for access keys on web pages.
 
 ## Development
 

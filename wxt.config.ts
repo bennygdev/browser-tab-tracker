@@ -39,7 +39,7 @@ export default defineConfig({
     },
     commands: {
       _execute_action: {
-        suggested_key: { default: 'Alt+Shift+H' },
+        suggested_key: { default: 'Ctrl+Shift+Y' },
       },
     },
     web_accessible_resources: [

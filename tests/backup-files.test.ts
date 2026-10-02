@@ -35,13 +35,13 @@ afterEach(() => {
 });
 
 describe('writeDailyBackup', () => {
-  it('saves silently into the TabTracker folder, one file per weekday', async () => {
+  it('saves silently into the browser folder inside TabTracker, one file per weekday', async () => {
     await writeDailyBackup();
 
     const weekday = new Date().toLocaleDateString('en-GB', { weekday: 'long' }).toLowerCase();
     expect(browser.downloads.download).toHaveBeenCalledWith({
       url: 'blob:backup',
-      filename: `TabTracker/backup-${weekday}.json`,
+      filename: `TabTracker/chrome/backup-${weekday}.json`,
       conflictAction: 'overwrite',
       saveAs: false,
     });
@@ -72,7 +72,12 @@ describe('writeDailyBackup', () => {
 
     expect(browser.offscreen.createDocument).not.toHaveBeenCalled();
     expect(browser.downloads.setUiOptions).not.toHaveBeenCalled();
-    expect(browser.downloads.download).toHaveBeenCalledWith(expect.objectContaining({ url: 'blob:firefox' }));
+    expect(browser.downloads.download).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'blob:firefox',
+        filename: expect.stringMatching(/^TabTracker\/firefox\/backup-/),
+      }),
+    );
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:firefox');
   });
 });
