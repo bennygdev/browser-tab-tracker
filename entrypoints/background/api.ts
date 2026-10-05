@@ -7,6 +7,8 @@ import {
   getSnapshotSummaries,
   searchSnapshots,
 } from './queries';
+import { setRecordingPaused } from './pause';
+import { isPaused } from './recording';
 import { dismissLostSession, findLostSession } from './recovery';
 import { restoreTabs, searchForTab } from './restore';
 import { getSettings, saveSettings } from './settings';
@@ -25,4 +27,6 @@ export function registerMessageHandlers() {
   onMessage('importBackup', ({ data }) => importBackup(data));
   onMessage('getSettings', () => getSettings());
   onMessage('saveSettings', ({ data }) => saveSettings(data));
+  onMessage('getRecordingPaused', () => isPaused());
+  onMessage('setRecordingPaused', ({ data }) => setRecordingPaused(data));
 }

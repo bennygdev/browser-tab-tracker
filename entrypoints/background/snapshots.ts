@@ -2,16 +2,20 @@ import { countTabs, tabKey } from '@/lib/tabs';
 import type { RecoveryReason, Snapshot, WindowRecord } from '@/lib/types';
 import { db, snapshotsOf } from './db';
 import { toWindowRecord } from './records';
+import { hiddenTabIds, isPaused } from './recording';
 import { currentSessionId } from './session';
 import { resetTabCache } from './tab-cache';
 
 const TAB_DROP_THRESHOLD = 5;
 
 export async function takeSnapshot() {
-  const live = await browser.windows.getAll({ populate: true, windowTypes: ['normal'] });
-  await resetTabCache(live.flatMap((win) => win.tabs ?? []));
+  if (await isPaused()) return;
 
-  const windows = live
+  const live = await browser.windows.getAll({ populate: true, windowTypes: ['normal'] });
+  const visible = await withoutHiddenTabs(live);
+  await resetTabCache(visible.flatMap((win) => win.tabs ?? []));
+
+  const windows = visible
     .map(toWindowRecord)
     .filter((win) => win.tabs.length > 0)
     .sort((a, b) => a.id - b.id);
@@ -27,9 +31,17 @@ export async function takeSnapshot() {
     }
 
     const createdAt = Date.now();
-    if (previous) await recordClosures(previous, windows, createdAt);
+    if (previous) await recordClosures(previous, windows, new Set(live.flatMap((win) => win.id ?? [])), createdAt);
     await db.snapshots.add({ sessionId, createdAt, windows });
   });
+}
+
+async function withoutHiddenTabs(windows: Browser.windows.Window[]) {
+  const hidden = await hiddenTabIds(windows.flatMap((win) => win.tabs ?? []).flatMap((tab) => tab.id ?? []));
+  return windows.map((win) => ({
+    ...win,
+    tabs: win.tabs?.filter((tab) => tab.id === undefined || !hidden.has(tab.id)),
+  }));
 }
 
 async function refreshTitles(snapshot: Snapshot, windows: WindowRecord[]) {
@@ -37,8 +49,13 @@ async function refreshTitles(snapshot: Snapshot, windows: WindowRecord[]) {
   await db.snapshots.update(snapshot.id, { windows });
 }
 
-async function recordClosures(previous: Snapshot, windows: WindowRecord[], closedAt: number) {
-  const closed = findClosedWindows(previous.windows, windows);
+async function recordClosures(
+  previous: Snapshot,
+  windows: WindowRecord[],
+  openWindowIds: ReadonlySet<number>,
+  closedAt: number,
+) {
+  const closed = findClosedWindows(previous.windows, windows, openWindowIds);
   await db.closedWindows.bulkAdd(
     closed.map(({ incognito, tabs }) => ({
       sessionId: previous.sessionId,
@@ -53,11 +70,10 @@ async function recordClosures(previous: Snapshot, windows: WindowRecord[], close
   if (reason && !previous.recovery) await db.snapshots.update(previous.id, { recovery: reason });
 }
 
-function findClosedWindows(before: WindowRecord[], after: WindowRecord[]) {
-  const remaining = new Set(after.map((win) => win.id));
+function findClosedWindows(before: WindowRecord[], after: WindowRecord[], openWindowIds: ReadonlySet<number>) {
   const stillOpen = new Set(after.flatMap((win) => win.tabs.map((tab) => tabKey(tab.url, win.incognito))));
   return before.filter(
-    (win) => !remaining.has(win.id) && win.tabs.some((tab) => !stillOpen.has(tabKey(tab.url, win.incognito))),
+    (win) => !openWindowIds.has(win.id) && win.tabs.some((tab) => !stillOpen.has(tabKey(tab.url, win.incognito))),
   );
 }
 

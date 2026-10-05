@@ -17,6 +17,7 @@ A personal browser extension that records your open tabs, normal and private, so
 - Writes a silent daily backup to `Downloads/TabTracker/`, and exports or imports your whole history as a file
 - Thins out old history once a day so the database stays small, without ever touching recovery points
 - Lets you tone down the restore prompt, change the restore defaults and hide the Recently closed strip in Settings
+- Pauses recording when you browse something you don't want kept, with a gray toolbar icon while paused
 
 Everything stays on your machine. The extension makes no network requests.
 
@@ -54,6 +55,16 @@ assets/icon.svg   Toolbar icon source, PNG sizes are generated at build time
 - Each browser launch starts a new session, detected through `storage.session` (which the browser clears on restart). The previous session's last snapshot is kept as is, so tabs lost in a crash are still there
 - Recovery points are marked as Before window closed, Before tabs closed (5 or more at once) or Before browser closed
 - Tabs you close one at a time go to a closed tabs list. Closed windows are kept with all their tabs and show up under Recently closed until they are open again
+
+### Pausing recording
+
+Pause from the dashboard header or by right-clicking the toolbar icon. While paused:
+
+- Nothing new is saved: no snapshots, no closed tabs, no closed windows. Existing history and the daily backup carry on as before
+- The open tabs are saved one last time right before the pause starts
+- The toolbar icon turns gray and its tooltip says recording is paused. The pause stays on across browser restarts until you resume
+
+When you resume, tabs on pages you opened while paused stay out of your history. Each one stays out while it is on that site, along with links you open from it, and is recorded again once it goes to another site. Closing it while it is left out keeps it off the closed tabs list too.
 
 ### How restore works
 
@@ -158,6 +169,7 @@ Chrome keeps unpacked extensions across restarts, but reads them from that folde
 | `storage`, `unlimitedStorage` | Keep the full history without the default size cap |
 | `activeTab`, `scripting` | Show the overlay on the current page when you click the icon |
 | `alarms` | Daily backup and cleanup, and a periodic consistency check |
+| `contextMenus` | Pause and resume recording from the toolbar icon's right-click menu |
 | `notifications` | Offer to restore tabs after a crash |
 | `search` | Search for pages the extension is not allowed to reopen |
 | `downloads` | Write backups and exports |

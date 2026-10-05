@@ -29,6 +29,8 @@ interface ProtocolMap {
   importBackup(text: string): ImportResult;
   getSettings(): Settings;
   saveSettings(changes: Partial<Settings>): void;
+  getRecordingPaused(): boolean;
+  setRecordingPaused(paused: boolean): void;
   createObjectUrl(file: { text: string; type: string }): string;
 }
 

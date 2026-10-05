@@ -1,6 +1,7 @@
 import { debounce } from '@/lib/debounce';
 import { ensureAlarm } from './alarms';
 import { logClosedTab } from './closed-tabs';
+import { forgetHiddenTab, inheritHidden, isHidden, isPaused, revealIfLeftSite } from './recording';
 import { report } from './report';
 import { takeSnapshot } from './snapshots';
 import { forgetTab, rememberTab } from './tab-cache';
@@ -12,18 +13,17 @@ const CHECK_INTERVAL_MINUTES = 5;
 
 let snapshotQueue = Promise.resolve();
 
-const scheduleSnapshot = debounce(
-  () => {
-    snapshotQueue = snapshotQueue.then(takeSnapshot).catch(report);
-  },
-  SNAPSHOT_DELAY_MS,
-  SNAPSHOT_MAX_DELAY_MS,
-);
+export function snapshotNow() {
+  snapshotQueue = snapshotQueue.then(takeSnapshot).catch(report);
+  return snapshotQueue;
+}
+
+const scheduleSnapshot = debounce(snapshotNow, SNAPSHOT_DELAY_MS, SNAPSHOT_MAX_DELAY_MS);
 
 export function startTracking() {
   browser.tabs.onCreated.addListener(async (tab) => {
     scheduleSnapshot();
-    await rememberTab(tab).catch(report);
+    await recordCreation(tab).catch(report);
   });
 
   browser.tabs.onUpdated.addListener(async (_tabId, change, tab) => {
@@ -31,7 +31,7 @@ export function startTracking() {
       scheduleSnapshot();
     }
     if (change.url !== undefined || change.title !== undefined || change.pinned !== undefined) {
-      await rememberTab(tab).catch(report);
+      await recordChange(tab, change.url !== undefined).catch(report);
     }
   });
 
@@ -57,7 +57,27 @@ export function startTracking() {
   scheduleSnapshot();
 }
 
+async function recordCreation(tab: Browser.tabs.Tab) {
+  if (await isPaused()) return;
+  await inheritHidden(tab);
+  await rememberVisibleTab(tab);
+}
+
+async function recordChange(tab: Browser.tabs.Tab, navigated: boolean) {
+  if (await isPaused()) return;
+  if (navigated) {
+    await revealIfLeftSite(tab);
+    await inheritHidden(tab);
+  }
+  await rememberVisibleTab(tab);
+}
+
+async function rememberVisibleTab(tab: Browser.tabs.Tab) {
+  if (tab.id !== undefined && !(await isHidden(tab.id))) await rememberTab(tab);
+}
+
 async function recordRemoval(tabId: number, isWindowClosing: boolean) {
   const tab = await forgetTab(tabId);
-  if (tab && !isWindowClosing) await logClosedTab(tab);
+  await forgetHiddenTab(tabId);
+  if (tab && !isWindowClosing && !(await isPaused())) await logClosedTab(tab);
 }

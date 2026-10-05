@@ -6,6 +6,7 @@ import { OVERLAY_CLOSE_MESSAGE } from '@/lib/overlay';
 import type { RestoreRequest } from '@/lib/types';
 import { BackupActions } from './components/BackupActions';
 import { ClosedTabs } from './components/ClosedTabs';
+import { PauseButton, PausedNotice } from './components/PauseRecording';
 import { RecentlyClosed } from './components/RecentlyClosed';
 import { RestoreFeedback } from './components/RestoreFeedback';
 import { SearchResults } from './components/SearchResults';
@@ -13,7 +14,7 @@ import { SettingsView } from './components/SettingsView';
 import { SnapshotDetail } from './components/SnapshotDetail';
 import { Timeline } from './components/Timeline';
 import { Button, Toast } from './components/ui';
-import { useDebouncedValue, useSettings } from './hooks';
+import { useDebouncedValue, useRecordingPause, useSettings } from './hooks';
 import { cn } from './utils';
 
 type View = 'timeline' | 'closed';
@@ -39,6 +40,7 @@ export default function App() {
   const [notice, setNotice] = useState<{ id: number; message: string }>();
   const search = useDebouncedValue(query.trim(), 200);
   const settings = useSettings();
+  const pause = useRecordingPause();
   const queryClient = useQueryClient();
   const restore = useMutation({
     mutationFn: (request: RestoreRequest) => sendMessage('restoreTabs', request),
@@ -92,6 +94,7 @@ export default function App() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400">Your tab history, day by day</p>
           </div>
           <div className="flex items-center gap-1">
+            <PauseButton paused={pause.paused} pending={pause.pending} onToggle={pause.setPaused} />
             <BackupActions onNotice={showNotice} />
             <Button
               variant="ghost"
@@ -156,6 +159,7 @@ export default function App() {
           </div>
         )}
       </header>
+      {pause.paused && <PausedNotice />}
       {settingsOpen ? (
         <SettingsView onBack={() => setSettingsOpen(false)} />
       ) : (
