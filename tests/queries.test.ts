@@ -157,10 +157,7 @@ describe('searchSnapshots', () => {
   });
 
   it('keeps normal and private copies of the same URL apart', async () => {
-    await addSnapshot(100, [
-      windowOf(1, ['https://docs.example']),
-      windowOf(2, ['https://docs.example'], true),
-    ]);
+    await addSnapshot(100, [windowOf(1, ['https://docs.example']), windowOf(2, ['https://docs.example'], true)]);
 
     const results = await searchSnapshots('docs');
 

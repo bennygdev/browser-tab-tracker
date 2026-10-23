@@ -25,7 +25,11 @@ export function SnapshotDetail({ id, highlight, restoring, onRestore }: Snapshot
   const settings = useSettings();
   const [skipOverride, setSkipOverride] = useState<boolean>();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const { data: snapshot, isPending, error } = useQuery({
+  const {
+    data: snapshot,
+    isPending,
+    error,
+  } = useQuery({
     queryKey: ['snapshot', id],
     queryFn: () => sendMessage('getSnapshot', id),
   });

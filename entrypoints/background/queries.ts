@@ -6,8 +6,8 @@ import type {
   ClosedWindow,
   SearchResult,
   Snapshot,
-  SnapshotSummary,
   SnapshotsRequest,
+  SnapshotSummary,
 } from '@/lib/types';
 import { db } from './db';
 import { openTabKeys } from './open-tabs';

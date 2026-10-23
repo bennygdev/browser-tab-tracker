@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export async function getSettings(): Promise<Settings> {
-  return (await browser.storage.local.get(DEFAULT_SETTINGS)) as Settings;
+  return browser.storage.local.get<Settings>(DEFAULT_SETTINGS);
 }
 
 export function saveSettings(changes: Partial<Settings>) {

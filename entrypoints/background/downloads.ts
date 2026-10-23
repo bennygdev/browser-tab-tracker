@@ -79,6 +79,9 @@ function whenFinished(id: number) {
     }, DOWNLOAD_TIMEOUT_MS);
 
     browser.downloads.onChanged.addListener(onChanged);
-    browser.downloads.search({ id }).then(([item]) => finish(item?.state), () => undefined);
+    browser.downloads.search({ id }).then(
+      ([item]) => finish(item?.state),
+      () => undefined,
+    );
   });
 }

@@ -10,8 +10,8 @@ import type {
   SearchResult,
   Settings,
   Snapshot,
-  SnapshotSummary,
   SnapshotsRequest,
+  SnapshotSummary,
   TabEntry,
 } from './types';
 

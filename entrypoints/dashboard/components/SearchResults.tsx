@@ -14,7 +14,11 @@ interface SearchResultsProps {
 
 export function SearchResults({ query, onSelect }: SearchResultsProps) {
   const [activeKey, setActiveKey] = useState<string>();
-  const { data: results, isPending, error } = useQuery({
+  const {
+    data: results,
+    isPending,
+    error,
+  } = useQuery({
     queryKey: ['search', query],
     queryFn: () => sendMessage('searchSnapshots', query),
     placeholderData: keepPreviousData,

@@ -20,7 +20,14 @@ async function seedHistory() {
     recovery: 'session-end',
   });
   await db.sessions.update(sessionId, { endSnapshotId: second });
-  await db.closedTabs.add({ sessionId, closedAt: 2_500, url: 'https://c.example', title: 'C', pinned: false, incognito: false });
+  await db.closedTabs.add({
+    sessionId,
+    closedAt: 2_500,
+    url: 'https://c.example',
+    title: 'C',
+    pinned: false,
+    incognito: false,
+  });
   await db.closedWindows.add({ sessionId, snapshotId: first, closedAt: 2_900, ...window('https://a.example', true) });
 }
 

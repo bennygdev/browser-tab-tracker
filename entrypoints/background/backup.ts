@@ -77,11 +77,7 @@ function snapshotResolver(snapshots: Snapshot[]): SnapshotIdLookup {
   };
 }
 
-async function linkSessionEnds(
-  sessions: Session[],
-  sessionIds: Map<number, number>,
-  snapshotIdOf: SnapshotIdLookup,
-) {
+async function linkSessionEnds(sessions: Session[], sessionIds: Map<number, number>, snapshotIdOf: SnapshotIdLookup) {
   for (const { id, endSnapshotId } of sessions) {
     const sessionId = sessionIds.get(id);
     const snapshotId = endSnapshotId === undefined ? undefined : await snapshotIdOf(endSnapshotId);

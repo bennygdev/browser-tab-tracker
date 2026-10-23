@@ -25,7 +25,11 @@ beforeEach(() => {
   setOpenWindows([{ id: 1, tabs: ['https://open.example'] }]);
   vi.spyOn(browser.windows, 'create').mockImplementation(
     async (properties) =>
-      ({ id: NEW_WINDOW_ID, incognito: properties?.incognito ?? false, tabs: [{ id: PLACEHOLDER_TAB_ID }] }) as Browser.windows.Window,
+      ({
+        id: NEW_WINDOW_ID,
+        incognito: properties?.incognito ?? false,
+        tabs: [{ id: PLACEHOLDER_TAB_ID }],
+      }) as Browser.windows.Window,
   );
   vi.spyOn(browser.tabs, 'create').mockImplementation(async (properties) => {
     if (properties.url === BLOCKED_URL) throw new Error('Illegal URL');
@@ -103,7 +107,11 @@ describe('restoreTabs', () => {
     await restoreTabs({ windows: [planOf(urls)], target: 'new-window', skipAlreadyOpen: false });
 
     for (let id = 200; id < 212; id++) {
-      await fakeBrowser.tabs.onUpdated.trigger(id, { status: 'loading' }, fakeTab(id, `https://site${id - 200}.example`));
+      await fakeBrowser.tabs.onUpdated.trigger(
+        id,
+        { status: 'loading' },
+        fakeTab(id, `https://site${id - 200}.example`),
+      );
     }
 
     await vi.waitFor(() => expect(browser.tabs.discard).toHaveBeenCalledTimes(11));

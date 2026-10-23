@@ -1,8 +1,8 @@
 import { countTabs, tabKey } from '@/lib/tabs';
 import type { RecoveryReason, Snapshot, WindowRecord } from '@/lib/types';
 import { db, snapshotsOf } from './db';
-import { toWindowRecord } from './records';
 import { hiddenTabIds, isPaused } from './recording';
+import { toWindowRecord } from './records';
 import { currentSessionId } from './session';
 import { resetTabCache } from './tab-cache';
 

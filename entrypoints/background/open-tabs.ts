@@ -4,9 +4,7 @@ import { toTabRecord } from './records';
 
 export async function openTabKeys() {
   const windows = await browser.windows.getAll({ populate: true, windowTypes: ['normal'] });
-  return new Set(
-    windows.flatMap((win) => (win.tabs ?? []).map((tab) => tabKey(toTabRecord(tab).url, win.incognito))),
-  );
+  return new Set(windows.flatMap((win) => (win.tabs ?? []).map((tab) => tabKey(toTabRecord(tab).url, win.incognito))));
 }
 
 export async function missingTabs(windows: WindowPlan[]): Promise<WindowPlan[]> {

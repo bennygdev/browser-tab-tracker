@@ -23,15 +23,16 @@ Everything stays on your machine. The extension makes no network requests.
 
 ## Tech stack
 
-| Tool | Role |
-| --- | --- |
+| Tool                   | Role                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------- |
 | [WXT](https://wxt.dev) | Extension framework. Builds Chrome and Firefox (both Manifest V3) from one codebase |
-| TypeScript | Language |
-| React 19 | Dashboard UI |
-| TanStack Query | Dashboard data fetching and paging |
-| Tailwind CSS 4 | Styling |
-| IndexedDB via Dexie | Local snapshot database |
-| Vitest | Unit tests |
+| TypeScript             | Language                                                                            |
+| React 19               | Dashboard UI                                                                        |
+| TanStack Query         | Dashboard data fetching and paging                                                  |
+| Tailwind CSS 4         | Styling                                                                             |
+| IndexedDB via Dexie    | Local snapshot database                                                             |
+| Vitest                 | Unit tests                                                                          |
+| ESLint, Prettier       | Linting and formatting                                                              |
 
 ## Project structure
 
@@ -98,12 +99,12 @@ Chrome's background service worker cannot create files, so it hands the data to 
 
 The gear button in the dashboard header opens the settings. Changes are saved right away in `storage.local`.
 
-| Setting | Default | What it does |
-| --- | --- | --- |
-| Restore notification | Always | Always, Only when private tabs were lost, or Off. The browser can reopen normal tabs by itself, but never private ones |
-| Skip tabs already open | On | The default for every Restore button. Each snapshot still has its own toggle |
-| Lazy restore threshold | 10 | Restoring more tabs than this loads only the first tab of each window |
-| Show Recently closed | On | Shows or hides the strip above the timeline |
+| Setting                | Default | What it does                                                                                                           |
+| ---------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Restore notification   | Always  | Always, Only when private tabs were lost, or Off. The browser can reopen normal tabs by itself, but never private ones |
+| Skip tabs already open | On      | The default for every Restore button. Each snapshot still has its own toggle                                           |
+| Lazy restore threshold | 10      | Restoring more tabs than this loads only the first tab of each window                                                  |
+| Show Recently closed   | On      | Shows or hides the strip above the timeline                                                                            |
 
 ### How the overlay works
 
@@ -128,6 +129,8 @@ npm run build:firefox  # outputs .output/firefox-mv3
 npm run sign:firefox   # signed .xpi for a permanent Firefox install, see below
 npm run compile        # type check
 npm test               # unit tests
+npm run lint           # ESLint
+npm run format         # Prettier, sorts Tailwind classes too
 ```
 
 `dev` is for working on the code. `build` and `build:firefox` make the minified production build, which is what you install.
@@ -163,17 +166,17 @@ Chrome keeps unpacked extensions across restarts, but reads them from that folde
 
 ## Permissions
 
-| Permission | Why |
-| --- | --- |
-| `tabs` | Read tab URLs and titles |
-| `storage`, `unlimitedStorage` | Keep the full history without the default size cap |
-| `activeTab`, `scripting` | Show the overlay on the current page when you click the icon |
-| `alarms` | Daily backup and cleanup, and a periodic consistency check |
-| `contextMenus` | Pause and resume recording from the toolbar icon's right-click menu |
-| `notifications` | Offer to restore tabs after a crash |
-| `search` | Search for pages the extension is not allowed to reopen |
-| `downloads` | Write backups and exports |
-| `downloads.ui` (Chrome) | Hide the download bubble while the daily backup is saved |
-| `offscreen` (Chrome) | Turn backup data into a file, since the service worker cannot |
+| Permission                    | Why                                                                 |
+| ----------------------------- | ------------------------------------------------------------------- |
+| `tabs`                        | Read tab URLs and titles                                            |
+| `storage`, `unlimitedStorage` | Keep the full history without the default size cap                  |
+| `activeTab`, `scripting`      | Show the overlay on the current page when you click the icon        |
+| `alarms`                      | Daily backup and cleanup, and a periodic consistency check          |
+| `contextMenus`                | Pause and resume recording from the toolbar icon's right-click menu |
+| `notifications`               | Offer to restore tabs after a crash                                 |
+| `search`                      | Search for pages the extension is not allowed to reopen             |
+| `downloads`                   | Write backups and exports                                           |
+| `downloads.ui` (Chrome)       | Hide the download bubble while the daily backup is saved            |
+| `offscreen` (Chrome)          | Turn backup data into a file, since the service worker cannot       |
 
 No host permissions, and nothing runs on a page until you click the icon.

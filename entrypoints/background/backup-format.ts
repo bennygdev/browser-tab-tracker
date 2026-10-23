@@ -44,7 +44,10 @@ const isNumber = (value: unknown): value is number => typeof value === 'number' 
 const isList = <T>(value: unknown, guard: Guard<T>): value is T[] => Array.isArray(value) && value.every(guard);
 
 const isTab: Guard<TabRecord> = (value): value is TabRecord =>
-  isObject(value) && typeof value.url === 'string' && typeof value.title === 'string' && typeof value.pinned === 'boolean';
+  isObject(value) &&
+  typeof value.url === 'string' &&
+  typeof value.title === 'string' &&
+  typeof value.pinned === 'boolean';
 
 const isWindow: Guard<WindowRecord> = (value): value is WindowRecord =>
   isObject(value) && isNumber(value.id) && typeof value.incognito === 'boolean' && isList(value.tabs, isTab);

@@ -35,11 +35,7 @@ describe('tracker', () => {
 
   it('logs the latest URL of a tab that navigated before closing', async () => {
     await fakeBrowser.tabs.onCreated.trigger(fakeTab(7, 'https://a.example'));
-    await fakeBrowser.tabs.onUpdated.trigger(
-      7,
-      { url: 'https://b.example' },
-      fakeTab(7, 'https://b.example'),
-    );
+    await fakeBrowser.tabs.onUpdated.trigger(7, { url: 'https://b.example' }, fakeTab(7, 'https://b.example'));
     await fakeBrowser.tabs.onRemoved.trigger(7, { windowId: 1, isWindowClosing: false });
 
     expect(await db.closedTabs.toArray()).toMatchObject([{ url: 'https://b.example' }]);

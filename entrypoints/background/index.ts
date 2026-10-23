@@ -4,6 +4,7 @@ import { startMaintenance } from './maintenance';
 import { openDashboard } from './open-dashboard';
 import { setRecordingPaused } from './pause';
 import { startRecoveryChecks } from './recovery';
+import { report } from './report';
 import { startTracking } from './tracker';
 
 export default defineBackground(() => {
@@ -12,5 +13,7 @@ export default defineBackground(() => {
   startMaintenance();
   startIndicator(setRecordingPaused);
   registerMessageHandlers();
-  browser.action.onClicked.addListener(openDashboard);
+  browser.action.onClicked.addListener((tab) => {
+    openDashboard(tab).catch(report);
+  });
 });

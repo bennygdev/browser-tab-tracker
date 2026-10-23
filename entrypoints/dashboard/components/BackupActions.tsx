@@ -64,6 +64,10 @@ function describeImport({ snapshots, closedTabs, closedWindows }: ImportResult) 
   if (snapshots + closedTabs + closedWindows === 0) {
     return 'Nothing new to import. Everything in this file is already here.';
   }
-  const parts = [plural(snapshots, 'snapshot'), plural(closedTabs, 'closed tab'), plural(closedWindows, 'closed window')];
+  const parts = [
+    plural(snapshots, 'snapshot'),
+    plural(closedTabs, 'closed tab'),
+    plural(closedWindows, 'closed window'),
+  ];
   return `Imported ${parts.join(', ')}.`;
 }

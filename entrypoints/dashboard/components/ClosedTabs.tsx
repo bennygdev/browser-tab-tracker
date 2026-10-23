@@ -14,11 +14,7 @@ export function ClosedTabs({ query }: { query: string }) {
   if (isPending) return <Notice>Loading…</Notice>;
   if (error) return <Notice>Couldn't load your closed tabs.</Notice>;
   if (items.length === 0) {
-    return (
-      <Notice>
-        {query ? `No closed tabs match "${query}".` : 'Tabs you close one at a time show up here.'}
-      </Notice>
-    );
+    return <Notice>{query ? `No closed tabs match "${query}".` : 'Tabs you close one at a time show up here.'}</Notice>;
   }
 
   return (
