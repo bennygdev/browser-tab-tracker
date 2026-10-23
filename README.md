@@ -1,5 +1,7 @@
 # Tab Tracker
 
+[![CI](https://github.com/bennygdev/browser-tab-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bennygdev/browser-tab-tracker/actions/workflows/ci.yml)
+
 A personal browser extension that records your open tabs, normal and private, so you can get them back after a crash, a blackout, or an accidental close.
 
 > Status: early development.
@@ -118,7 +120,7 @@ The shortcut can be changed in `chrome://extensions/shortcuts` (Chrome) or under
 
 ## Development
 
-Requires Node 22 or newer.
+Requires Node 22.13 or newer.
 
 ```bash
 npm install
