@@ -22,6 +22,10 @@ export function countTabs(windows: Pick<WindowPlan, 'tabs'>[]) {
   return windows.reduce((total, win) => total + win.tabs.length, 0);
 }
 
+export function countPrivateTabs(windows: WindowPlan[]) {
+  return countTabs(windows.filter((win) => win.incognito));
+}
+
 export function withoutBlankPages(windows: WindowPlan[]): WindowPlan[] {
   return windows
     .map(({ incognito, tabs }) => ({ incognito, tabs: tabs.filter((tab) => !isBlankPage(tab.url)) }))

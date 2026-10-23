@@ -1,4 +1,5 @@
 import { debounce } from '@/lib/debounce';
+import { createQueue } from '@/lib/queue';
 import { ensureAlarm } from './alarms';
 import { logClosedTab } from './closed-tabs';
 import { forgetHiddenTab, inheritHidden, isHidden, isPaused, revealIfLeftSite } from './recording';
@@ -11,11 +12,10 @@ const SNAPSHOT_MAX_DELAY_MS = 5000;
 const CHECK_ALARM = 'snapshot-check';
 const CHECK_INTERVAL_MINUTES = 5;
 
-let snapshotQueue = Promise.resolve();
+const snapshotQueue = createQueue();
 
 export function snapshotNow() {
-  snapshotQueue = snapshotQueue.then(takeSnapshot).catch(report);
-  return snapshotQueue;
+  return snapshotQueue(takeSnapshot).catch(report);
 }
 
 const scheduleSnapshot = debounce(snapshotNow, SNAPSHOT_DELAY_MS, SNAPSHOT_MAX_DELAY_MS);
@@ -67,6 +67,7 @@ async function recordChange(tab: Browser.tabs.Tab, navigated: boolean) {
   if (await isPaused()) return;
   if (navigated) {
     await revealIfLeftSite(tab);
+    // Chrome only reports openerTabId for tabs made with tabs.create() once they first navigate.
     await inheritHidden(tab);
   }
   await rememberVisibleTab(tab);

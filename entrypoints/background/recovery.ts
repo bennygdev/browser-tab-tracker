@@ -1,5 +1,5 @@
-import { formatDate, formatShortTime, plural } from '@/lib/format';
-import { countTabs, withoutBlankPages } from '@/lib/tabs';
+import { formatDateTime, plural } from '@/lib/format';
+import { countPrivateTabs, countTabs, withoutBlankPages } from '@/lib/tabs';
 import type { LostSession } from '@/lib/types';
 import { db } from './db';
 import { openStandaloneDashboard } from './open-dashboard';
@@ -85,9 +85,9 @@ async function handleNotification(notificationId: string, action: 'restore' | 'r
 
 function describeLostSession({ endedAt, windows }: LostSession) {
   const total = countTabs(windows);
-  const privateCount = countTabs(windows.filter((win) => win.incognito));
+  const privateCount = countPrivateTabs(windows);
   const tabs = privateCount > 0 ? `${plural(total, 'tab')} (${privateCount} private)` : plural(total, 'tab');
   const verb = total === 1 ? "isn't" : "aren't";
   const hint = IS_FIREFOX ? ' Click to review.' : '';
-  return `${tabs} from ${formatDate(endedAt)} ${formatShortTime(endedAt)} ${verb} open.${hint}`;
+  return `${tabs} from ${formatDateTime(endedAt)} ${verb} open.${hint}`;
 }

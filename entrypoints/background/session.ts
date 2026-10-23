@@ -44,6 +44,7 @@ async function markSessionEnd(session: Session) {
   await db.sessions.update(session.id, { endSnapshotId });
 }
 
+// Browsers close windows one at a time on exit, so step back past those closes to the last full state.
 async function findEndSnapshotId(sessionId: number) {
   const recent = await snapshotsOf(sessionId).reverse().limit(MAX_SHUTDOWN_STEPS).toArray();
   const [last] = recent;

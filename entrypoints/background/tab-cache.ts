@@ -1,6 +1,7 @@
 import type { TabEntry } from '@/lib/types';
 import { toTabRecord } from './records';
 
+// tabs.onRemoved only passes the tab id, and Chrome can stop the worker at any time, so tab details live in storage.
 const KEY_PREFIX = 'tab:';
 
 export async function rememberTab(tab: Browser.tabs.Tab) {

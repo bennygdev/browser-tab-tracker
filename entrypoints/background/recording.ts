@@ -1,3 +1,4 @@
+import { createQueue } from '@/lib/queue';
 import { RECORDING_PAUSED_KEY } from '@/lib/recording';
 import { isBlankPage, tabKey } from '@/lib/tabs';
 import { db } from './db';
@@ -8,7 +9,7 @@ const HIDDEN_CARRY_KEY = 'hiddenTabsOpen';
 
 type HiddenTabs = Record<number, string>;
 
-let pendingChange: Promise<unknown> = Promise.resolve();
+const hiddenChanges = createQueue();
 
 export async function isPaused() {
   const { [RECORDING_PAUSED_KEY]: paused } = await browser.storage.local.get(RECORDING_PAUSED_KEY);
@@ -60,18 +61,17 @@ export function forgetHiddenTab(tabId: number) {
 }
 
 function changeHidden(change: (hidden: HiddenTabs) => HiddenTabs | undefined) {
-  const next = pendingChange.then(async () => {
+  return hiddenChanges(async () => {
     const updated = change(await loadHidden());
     if (updated) await saveHidden(updated);
   });
-  pendingChange = next.catch(() => undefined);
-  return next;
 }
 
 async function loadHidden(): Promise<HiddenTabs> {
   const { [HIDDEN_KEY]: hidden } = await browser.storage.session.get(HIDDEN_KEY);
   if (hidden) return hidden as HiddenTabs;
 
+  // Only a flag survives a restart, never URLs, so the hidden tabs are worked out again from the last snapshot.
   const { [HIDDEN_CARRY_KEY]: carried } = await browser.storage.local.get(HIDDEN_CARRY_KEY);
   const restored = carried ? await findUnrecordedTabs() : {};
   await saveHidden(restored);

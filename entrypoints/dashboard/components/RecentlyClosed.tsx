@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppWindow, Clock, EyeOff, type LucideIcon, X } from 'lucide-react';
 import { formatRelative, plural } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
-import { countTabs } from '@/lib/tabs';
+import { countPrivateTabs, countTabs } from '@/lib/tabs';
 import type { LostSession, RestoreRequest, WindowPlan } from '@/lib/types';
 import { cn } from '../utils';
 import { Button } from './ui';
@@ -108,7 +108,7 @@ function RecentCard({ tone, icon: Icon, title, detail, busy, onOpen, onRestore, 
 }
 
 function describeLostSession({ endedAt, windows }: LostSession) {
-  const privateCount = countTabs(windows.filter((win) => win.incognito));
+  const privateCount = countPrivateTabs(windows);
   const privateNote = privateCount > 0 ? ` · ${privateCount} private` : '';
   return `${plural(countTabs(windows), 'tab')} not open${privateNote} · ended ${formatRelative(endedAt)}`;
 }

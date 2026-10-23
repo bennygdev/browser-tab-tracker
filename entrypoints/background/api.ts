@@ -1,13 +1,7 @@
 import { onMessage } from '@/lib/messages';
 import { exportBackup, importBackup } from './backup';
-import {
-  getClosedTabs,
-  getClosedWindows,
-  getSnapshot,
-  getSnapshotSummaries,
-  searchSnapshots,
-} from './queries';
 import { setRecordingPaused } from './pause';
+import { getClosedTabs, getClosedWindows, getSnapshot, getSnapshotSummaries, searchSnapshots } from './queries';
 import { isPaused } from './recording';
 import { dismissLostSession, findLostSession } from './recovery';
 import { restoreTabs, searchForTab } from './restore';

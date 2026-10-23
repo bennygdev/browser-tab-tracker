@@ -1,6 +1,8 @@
 import { sendMessage } from '@/lib/messages';
+import { createQueue } from '@/lib/queue';
+import { MINUTE_MS } from '@/lib/time';
 
-const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
+const DOWNLOAD_TIMEOUT_MS = 5 * MINUTE_MS;
 const JSON_TYPE = 'application/json';
 
 interface FileUrl {
@@ -8,14 +10,13 @@ interface FileUrl {
   release: () => Promise<void>;
 }
 
-let saving: Promise<unknown> = Promise.resolve();
+const saves = createQueue();
 
-export function saveJsonFile(filename: string, json: string, { silent }: { silent: boolean }): Promise<boolean> {
-  const save = saving.then(() => download(filename, json, silent));
-  saving = save.catch(() => undefined);
-  return save;
+export function saveJsonFile(filename: string, json: string, { silent }: { silent: boolean }) {
+  return saves(() => download(filename, json, silent));
 }
 
+// Runs on every start in case the worker was stopped while the download bubble was hidden.
 export function restoreDownloadUi() {
   return setDownloadUi(true);
 }
@@ -45,6 +46,7 @@ async function createFileUrl(json: string): Promise<FileUrl> {
     return { url, release: async () => URL.revokeObjectURL(url) };
   }
 
+  // Chrome's service worker has no URL.createObjectURL, so the offscreen page makes the file URL.
   if (!(await browser.offscreen.hasDocument())) {
     await browser.offscreen.createDocument({
       url: browser.runtime.getURL('/offscreen.html'),

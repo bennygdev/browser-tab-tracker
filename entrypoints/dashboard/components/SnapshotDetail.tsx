@@ -18,6 +18,8 @@ interface SnapshotDetailProps {
   onRestore: (request: RestoreRequest) => void;
 }
 
+const selectionKey = (windowIndex: number, position: number) => `${windowIndex}:${position}`;
+
 export function SnapshotDetail({ id, highlight, restoring, onRestore }: SnapshotDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const settings = useSettings();
@@ -58,7 +60,7 @@ export function SnapshotDetail({ id, highlight, restoring, onRestore }: Snapshot
     restore(
       snapshot.windows.map((win, index) => ({
         incognito: win.incognito,
-        tabs: win.tabs.filter((_, position) => selected.has(`${index}:${position}`)),
+        tabs: win.tabs.filter((_, position) => selected.has(selectionKey(index, position))),
       })),
       'existing-window',
     );
@@ -115,8 +117,8 @@ export function SnapshotDetail({ id, highlight, restoring, onRestore }: Snapshot
                     number={order + 1}
                     busy={restoring}
                     isMatch={isMatch}
-                    isSelected={(position) => selected.has(`${index}:${position}`)}
-                    onToggle={(position) => toggle(`${index}:${position}`)}
+                    isSelected={(position) => selected.has(selectionKey(index, position))}
+                    onToggle={(position) => toggle(selectionKey(index, position))}
                     onRestore={() => restore([win])}
                     onOpenTab={(tab) =>
                       onRestore({

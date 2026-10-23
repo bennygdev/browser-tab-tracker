@@ -68,6 +68,7 @@ async function openTab(windowId: number, tab: TabRecord, { active, lazy }: { act
   }
 }
 
+// Chrome can't create a tab discarded, and discarding one before its URL commits leaves a blank tab.
 async function discardOnceCommitted(tabId: number) {
   if (await waitForCommit(tabId)) await browser.tabs.discard(tabId).catch(() => undefined);
 }

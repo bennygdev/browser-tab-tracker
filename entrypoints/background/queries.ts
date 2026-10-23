@@ -1,5 +1,5 @@
 import { SEARCH_LIMIT, tabMatcher } from '@/lib/search';
-import { countTabs, isBlankPage, tabKey } from '@/lib/tabs';
+import { countPrivateTabs, countTabs, isBlankPage, tabKey } from '@/lib/tabs';
 import type {
   ClosedTab,
   ClosedTabsRequest,
@@ -33,7 +33,7 @@ export async function getSnapshotSummaries({
     ...snapshot,
     sessionStartedAt: startedAt.get(snapshot.sessionId) ?? snapshot.createdAt,
     tabCount: countTabs(windows),
-    privateTabCount: countTabs(windows.filter((win) => win.incognito)),
+    privateTabCount: countPrivateTabs(windows),
   }));
 }
 

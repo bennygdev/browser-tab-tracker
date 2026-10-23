@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatDate, formatShortTime, formatTime, plural } from '@/lib/format';
+import { formatDate, formatDateTime, formatShortTime, formatTime, plural } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
 import type { SnapshotSummary } from '@/lib/types';
 import { usePagedQuery } from '../hooks';
@@ -107,6 +107,5 @@ function TimelineRow({ snapshot, selected, onSelect }: TimelineRowProps) {
 }
 
 function sessionStart(startedAt: number, day: string) {
-  const time = formatShortTime(startedAt);
-  return formatDate(startedAt) === day ? time : `${formatDate(startedAt)} ${time}`;
+  return formatDate(startedAt) === day ? formatShortTime(startedAt) : formatDateTime(startedAt);
 }

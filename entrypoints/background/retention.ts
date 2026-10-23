@@ -1,7 +1,6 @@
+import { DAY_MS } from '@/lib/time';
 import { db } from './db';
 
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
 const KEEP_EVERYTHING_DAYS = 7;
 const KEEP_HOURLY_DAYS = 30;
 const KEEP_CLOSED_DAYS = 90;

@@ -1,8 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { formatDate, formatShortTime } from '@/lib/format';
+import { formatDateTime } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
 import { SEARCH_LIMIT } from '@/lib/search';
+import { tabKey } from '@/lib/tabs';
 import { cn } from '../utils';
 import { Notice, PrivateBadge, TabLabel } from './ui';
 
@@ -27,7 +28,7 @@ export function SearchResults({ query, onSelect }: SearchResultsProps) {
     <div>
       <ul>
         {results.map((result) => {
-          const key = `${result.incognito}:${result.url}`;
+          const key = tabKey(result.url, result.incognito);
           return (
             <li key={key}>
               <button
@@ -43,7 +44,7 @@ export function SearchResults({ query, onSelect }: SearchResultsProps) {
               >
                 <TabLabel {...result} />
                 <p className="flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500">
-                  Last seen {formatDate(result.seenAt)} {formatShortTime(result.seenAt)}
+                  Last seen {formatDateTime(result.seenAt)}
                   {result.incognito && <PrivateBadge />}
                 </p>
               </button>
