@@ -182,3 +182,7 @@ Chrome keeps unpacked extensions across restarts, but reads them from that folde
 | `offscreen` (Chrome)          | Turn backup data into a file, since the service worker cannot       |
 
 No host permissions, and nothing runs on a page until you click the icon.
+
+## License
+
+[MIT](LICENSE)
